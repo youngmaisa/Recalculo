@@ -2,51 +2,59 @@ import streamlit as st
 import pandas as pd
 import io
 
+# Cargar datos
 df_original = pd.read_excel("ANÁLISIS CALIDAD PROACTIVO - CANALES.xlsx", sheet_name="Hoja")
 df_original['DNI'] = df_original['DNI'].astype(str)
 df_original['MES'] = df_original['MES'].astype(str)
-df_original['PAGO OCT'] = df_original['PAGO OCT'].astype(float)
 df_original['HC'] = 1
-df_original['RANGO_ORIGINAL'] = pd.qcut(df_original['QVENTAS'], q=10, duplicates='drop').apply(lambda x: f"[{int(x.left)}-{int(x.right)})")
-
 
 def calcular_deciles(dataframe):
     dataframe = dataframe.copy()
-    dataframe['RANGO_RCALC'] = pd.qcut(dataframe['QVENTAS'], q=10, duplicates='drop').apply(lambda x: f"[{int(x.left)}-{int(x.right)})")
-    dataframe['DECIL'] = pd.qcut(dataframe['QVENTAS'], q=10, duplicates='drop', labels=False) + 1
+    dataframe['DECIL'] = pd.qcut(-dataframe['Urs'], q=10, duplicates='drop', labels=False) + 1
     return dataframe
-
 
 df = calcular_deciles(df_original)
 
 
-# Resumennn 
-def resumen_deciles(dataframe, rango_col, decil_col):
+df['URM2%'] = (df['Urs'] / df['QVENTAS']) * 100
+df['QNP%'] = (df['FLAG 30'] / df['Q JUL']) * 100
+df['QNP%'] = df['QNP%'].fillna(0)
+df = df[['TIPO', 'DECIL' ,'DNI',  'Urs', 'QVENTAS', 'HC', 'FLAG 30', 'Q JUL', 'URM2%', 'QNP%']]
+
+# Resumennn deciles originales
+def resumen_deciles(dataframe, decil_col):
     resumen = dataframe.groupby(decil_col).agg(
-        Rango=(rango_col, 'first'),
         Cantidad=('HC', 'sum')
     ).reset_index().rename(columns={decil_col: 'Decil'})
     return resumen
 
-# Resumen original
-st.subheader("Deciles iniciales")
+st.subheader("Deciles originales")
 if not df.empty:
-    resumen_original = resumen_deciles(df, 'RANGO_ORIGINAL', 'DECIL')
+    resumen_original = resumen_deciles(df, 'DECIL')
     st.dataframe(resumen_original, use_container_width=True)
 
 
-st.subheader("Recalculo")
-st.sidebar.title("Filtros iniciales")
-opciones_filtro = sorted(
-    df['RANGO_ORIGINAL'].unique(),
-    key=lambda x: int(x.split('-')[0].strip('[]'))
-)
 
-filtros_deseleccionados = st.sidebar.multiselect(
-    "Selecciona los rangos que **NO** quieres incluir en el cálculo",
-    options=opciones_filtro,
+# Filtros
+
+st.sidebar.title("Filtros iniciales")
+
+opciones_filtros_subcanal = sorted(df['TIPO'].unique())
+filtros_seleccionados_subcanal = st.sidebar.multiselect(
+    "Selecciona los subcanales que **SI** quieres incluir en el cálculo",
+    options=opciones_filtros_subcanal,
     default=[]  
 )
+
+min_val = df["QVENTAS"].min()
+max_val = df["QVENTAS"].max()
+filtros_seleccionados = st.sidebar.slider(
+    "Selecciona el rango de ventas (QVENTAS):",
+    min_value=int(min_val),
+    max_value=int(max_val),
+    value=(int(min_val), int(max_val))
+)
+
 st.sidebar.info(
     """
     - Los filtros siempre muestran los **rangos originales de deciles**.
@@ -55,84 +63,79 @@ st.sidebar.info(
 )
 st.sidebar.info("Creado por Mafer Medina - 2024")
 
+# Filtrar datos según los filtros seleccionados
+df_filtrado = df.copy()  # Por defecto, sin filtros
 
+if filtros_seleccionados_subcanal:
+    df_filtrado = df_filtrado[df_filtrado['TIPO'].isin(filtros_seleccionados_subcanal)]
 
-if filtros_deseleccionados:
-    df_filtrado = df[~df['RANGO_ORIGINAL'].isin(filtros_deseleccionados)]
-else:
-    df_filtrado = df.copy()
+if filtros_seleccionados:
+    df_filtrado = df_filtrado[
+        (df_filtrado["QVENTAS"] >= filtros_seleccionados[0]) &
+        (df_filtrado["QVENTAS"] <= filtros_seleccionados[1])
+    ]
 
-
+# Recalcular deciles si hay datos filtrados
 if not df_filtrado.empty:
     df_recalculado = calcular_deciles(df_filtrado)
-    df_recalculado = df_recalculado.sort_values(by=['TIPO', 'DECIL']) ##### IMPORTANTE 
+    #df_recalculado = df_recalculado.sort_values(by=['DECIL', 'Urs'], ascending= True)
+    df_recalculado = df_recalculado.sort_values(by=['DECIL', 'Urs'], ascending=[True, False])
+
 else:
     df_recalculado = pd.DataFrame(columns=df.columns)
 
 
+st.subheader("Recalculo")
+
+# Mostrar DataFrame recalculado o inicial
 if not df_recalculado.empty:
-    st.dataframe(df_recalculado, use_container_width=True)   
+    tabla_detallada = df_recalculado
+    tabla_detallada['URM2%'] = (tabla_detallada['Urs'] / tabla_detallada['QVENTAS']) * 100
+    tabla_detallada['QNP%'] = (tabla_detallada['FLAG 30']/ tabla_detallada['Q JUL']) * 100
+    tabla_detallada['QNP%'] = tabla_detallada['QNP%'].fillna(0)
+
+    st.dataframe(tabla_detallada, use_container_width=True)
 else:
     st.write("No hay datos disponibles después del filtro.")
 
 
-############################ 
-
-if not df_recalculado.empty:
-    towrite_recalc = io.BytesIO()
-    with pd.ExcelWriter(towrite_recalc, engine="xlsxwriter") as writer:
-        df_recalculado.to_excel(writer, index=False, sheet_name="Datos Recalculados")
-    towrite_recalc.seek(0)
-
-    st.download_button(
-        label="Descargar",
-        data=towrite_recalc,
-        file_name="datos_recalculados.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-
-
-##########################
-
-tabla_detallada = df_recalculado[['TIPO', 'DECIL', 'RANGO_RCALC' ,'DNI', 'HC', 'QVENTAS', 'Urs']]
-tabla_detallada['URM2%'] = (tabla_detallada['Urs'] / tabla_detallada['QVENTAS']) * 100
-st.subheader("Tabla Recalculada")
-st.dataframe(tabla_detallada, use_container_width=True)
-
-
-towrite = io.BytesIO()
-with pd.ExcelWriter(towrite, engine="xlsxwriter") as writer:
-    tabla_detallada.to_excel(writer, index=False, sheet_name="Tabla")
-towrite.seek(0)
+towrite_detallada = io.BytesIO()
+with pd.ExcelWriter(towrite_detallada, engine="xlsxwriter") as writer:
+    tabla_detallada.to_excel(writer, index=False, sheet_name="Tabla Pivote")
+towrite_detallada.seek(0)
 
 st.download_button(
     label="Descargar",
-    data=towrite,
-    file_name="tabla.xlsx",
+    data=towrite_detallada,
+    file_name="tabla_extendida.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
 
 
-##############################
+
+## PIVOT TABLA
 if not df_recalculado.empty:
     st.subheader("Tabla Pivot")
     
     # Crear tabla pivote
     tabla_pivote = df_recalculado.pivot_table(
         index=['TIPO', 'DECIL'],
-        values=['HC', 'QVENTAS', 'Urs'],
+        values=['HC','Urs', 'QVENTAS', 'FLAG 30', 'Q JUL'],
         aggfunc={
             'HC': 'sum',
+            'Urs': 'sum',
             'QVENTAS': 'sum',
-            'Urs': 'sum'
+            'FLAG 30': 'sum',
+            'Q JUL': 'sum'
         },
         
     ).reset_index()
     
     tabla_pivote['URM2%'] = (tabla_pivote['Urs'] / tabla_pivote['QVENTAS']) * 100
+    tabla_pivote['QNP%'] =  (tabla_pivote['FLAG 30'] / tabla_pivote['Q JUL']) * 100
+    tabla_pivote['QNP%'] = tabla_pivote['QNP%'].fillna(0)
+    tabla_pivote = tabla_pivote[['TIPO', 'DECIL',  'QVENTAS', 'HC', 'Urs', 'URM2%', 'QNP%']]
     st.dataframe(tabla_pivote, use_container_width=True)
-    
-
 
 towrite_pivote = io.BytesIO()
 with pd.ExcelWriter(towrite_pivote, engine="xlsxwriter") as writer:
@@ -142,16 +145,25 @@ towrite_pivote.seek(0)
 st.download_button(
     label="Descargar",
     data=towrite_pivote,
-    file_name="tabla_pivot.xlsx",
+    file_name="tabla_resumida.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
 
 
-# Resumennnnn 
-st.subheader("Deciles Recalculados")
-if not df_recalculado.empty:
-    resumen_recalculado = resumen_deciles(df_recalculado, 'RANGO_RCALC', 'DECIL')
-    st.dataframe(resumen_recalculado, use_container_width=True)
+
+
+# Resumennn deciles recalculados
+def resumen_deciles(dataframe, decil_col):
+    resumen = dataframe.groupby(decil_col).agg(
+        Cantidad=('HC', 'sum')
+    ).reset_index().rename(columns={decil_col: 'Decil'})
+    return resumen
+
+st.subheader("Deciles recalculados")
+if not df.empty:
+    resumen_original = resumen_deciles(df_recalculado, 'DECIL')
+    st.dataframe(resumen_original, use_container_width=True)
+
 
 
 st.markdown(
@@ -168,4 +180,3 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
