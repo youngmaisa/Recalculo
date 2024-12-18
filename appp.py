@@ -41,11 +41,10 @@ st.sidebar.title("Filtros iniciales")
 
 opciones_filtros_subcanal = sorted(df['TIPO'].unique())
 filtros_seleccionados_subcanal = st.sidebar.multiselect(
-    "Selecciona los subcanales que **SI** quieres incluir en el cálculo",
+    "Selecciona el subcanal que **SI** quieres incluir en el cálculo",
     options=opciones_filtros_subcanal,
     default=[]  
 )
-
 min_val = df["QVENTAS"].min()
 max_val = df["QVENTAS"].max()
 filtros_seleccionados = st.sidebar.slider(
@@ -133,6 +132,15 @@ if not df_recalculado.empty:
     tabla_pivote['URM2%'] = (tabla_pivote['Urs'] / tabla_pivote['QVENTAS']) * 100
     tabla_pivote['QNP%'] =  (tabla_pivote['FLAG 30'] / tabla_pivote['Q JUL']) * 100
     tabla_pivote['QNP%'] = tabla_pivote['QNP%'].fillna(0)
+
+    # Calcular los totales
+    totales = tabla_pivote[['QVENTAS', 'HC', 'Urs', 'FLAG 30', 'Q JUL']].sum()
+    totales['TIPO'] = 'Total'
+    totales['DECIL'] = ''
+    totales['URM2%'] = (totales['Urs'] / totales['QVENTAS']) * 100 if totales['QVENTAS'] != 0 else 0
+    totales['QNP%'] = (totales['FLAG 30'] / totales['Q JUL']) * 100 if totales['Q JUL'] != 0 else 0
+
+    tabla_pivote = pd.concat([tabla_pivote, totales.to_frame().T], ignore_index=True)
     tabla_pivote = tabla_pivote[['TIPO', 'DECIL',  'QVENTAS', 'HC', 'Urs', 'URM2%', 'QNP%']]
     st.dataframe(tabla_pivote, use_container_width=True)
 
