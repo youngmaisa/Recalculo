@@ -37,7 +37,11 @@ if not df.empty:
 
 st.subheader("Recalculo")
 st.sidebar.title("Filtros iniciales")
-opciones_filtro = df['RANGO_ORIGINAL'].unique().tolist()
+opciones_filtro = sorted(
+    df['RANGO_ORIGINAL'].unique(),
+    key=lambda x: int(x.split('-')[0].strip('[]'))
+)
+
 filtros_deseleccionados = st.sidebar.multiselect(
     "Selecciona los rangos que **NO** quieres incluir en el cálculo",
     options=opciones_filtro,
