@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import io
-
+import xlsxwriter
 
 
 df_original = pd.read_excel("ANÁLISIS CALIDAD PROACTIVO - CANALES.xlsx", sheet_name="Hoja")
