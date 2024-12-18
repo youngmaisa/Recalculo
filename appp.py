@@ -57,11 +57,10 @@ filtros_seleccionados = st.sidebar.slider(
 
 st.sidebar.info(
     """
-    - Los filtros siempre muestran los **rangos originales de deciles**.
     - Después de aplicar un filtro, los deciles se recalculan dinámicamente.
     """
 )
-st.sidebar.info("Creado por Mafer Medina - 2024")
+
 
 # Filtrar datos según los filtros seleccionados
 df_filtrado = df.copy()  # Por defecto, sin filtros
