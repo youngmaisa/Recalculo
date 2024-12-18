@@ -19,6 +19,22 @@ def calcular_deciles(dataframe):
 
 df = calcular_deciles(df_original)
 
+
+# Resumennn 
+def resumen_deciles(dataframe, rango_col, decil_col):
+    resumen = dataframe.groupby(decil_col).agg(
+        Rango=(rango_col, 'first'),
+        Cantidad=('HC', 'sum')
+    ).reset_index().rename(columns={decil_col: 'Decil'})
+    return resumen
+
+# Resumen original
+st.subheader("Deciles iniciales")
+if not df.empty:
+    resumen_original = resumen_deciles(df, 'RANGO_ORIGINAL', 'DECIL')
+    st.dataframe(resumen_original, use_container_width=True)
+
+
 st.subheader("Recalculo")
 st.sidebar.title("Filtros iniciales")
 opciones_filtro = df['RANGO_ORIGINAL'].unique().tolist()
@@ -35,6 +51,8 @@ st.sidebar.info(
 )
 st.sidebar.info("Creado por Mafer Medina - 2024")
 
+
+
 if filtros_deseleccionados:
     df_filtrado = df[~df['RANGO_ORIGINAL'].isin(filtros_deseleccionados)]
 else:
@@ -43,7 +61,7 @@ else:
 
 if not df_filtrado.empty:
     df_recalculado = calcular_deciles(df_filtrado)
-    df_recalculado = df_recalculado.sort_values(by=['TIPO', 'DECIL'])
+    df_recalculado = df_recalculado.sort_values(by=['TIPO', 'DECIL']) ##### IMPORTANTE 
 else:
     df_recalculado = pd.DataFrame(columns=df.columns)
 
@@ -74,7 +92,7 @@ if not df_recalculado.empty:
 
 tabla_detallada = df_recalculado[['TIPO', 'DECIL', 'RANGO_RCALC' ,'DNI', 'HC', 'QVENTAS', 'Urs']]
 tabla_detallada['URM2%'] = (tabla_detallada['Urs'] / tabla_detallada['QVENTAS']) * 100
-st.subheader("Tabla Limpia")
+st.subheader("Tabla Recalculada")
 st.dataframe(tabla_detallada, use_container_width=True)
 
 
@@ -97,7 +115,7 @@ if not df_recalculado.empty:
     
     # Crear tabla pivote
     tabla_pivote = df_recalculado.pivot_table(
-        index=['TIPO', 'RANGO_RCALC'],
+        index=['TIPO', 'DECIL'],
         values=['HC', 'QVENTAS', 'Urs'],
         aggfunc={
             'HC': 'sum',
@@ -123,6 +141,13 @@ st.download_button(
     file_name="tabla_pivot.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
+
+
+# Resumennnnn 
+st.subheader("Deciles Recalculados")
+if not df_recalculado.empty:
+    resumen_recalculado = resumen_deciles(df_recalculado, 'RANGO_RCALC', 'DECIL')
+    st.dataframe(resumen_recalculado, use_container_width=True)
 
 
 st.markdown(
