@@ -2,8 +2,6 @@ import streamlit as st
 import pandas as pd
 import io
 
-
-
 df_original = pd.read_excel("ANÁLISIS CALIDAD PROACTIVO - CANALES.xlsx", sheet_name="Hoja")
 df_original['DNI'] = df_original['DNI'].astype(str)
 df_original['MES'] = df_original['MES'].astype(str)
@@ -60,11 +58,23 @@ else:
 
 
 if not df_recalculado.empty:
-    st.write("### Datos después del filtro y recálculo de deciles:")
     st.dataframe(df_recalculado, use_container_width=True)   
 else:
     st.write("No hay datos disponibles después del filtro.")
 
+
+st.markdown(
+    """
+    <style>
+    .block-container {
+        padding: 2rem;
+        max-width: 95%; 
+        max-height: 95%
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 
 if not df_recalculado.empty:
