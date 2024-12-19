@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import io
 
-
 uploaded_file = st.file_uploader("Sube tu archivo Excel", type=["xlsx"])
 
 if uploaded_file is not None:
@@ -30,7 +29,7 @@ if uploaded_file is not None:
         # deciles
         grupos = []
         for decil in range(1, 11):
-            tam_actual = tam_grupo + (1 if decil <= restos else 0)  # Agrega 1 fila extra a los primeros "restos" grupos
+            tam_actual = tam_grupo + (1 if decil <= restos else 0)  # Agrega 1 fila extra a los primeros 
             grupos.extend([decil] * tam_actual)
         
         dataframe['DECIL'] = grupos[:total_filas]
@@ -234,3 +233,5 @@ if uploaded_file is not None:
 
 else:
     st.write("Por favor, sube un archivo para comenzar.")
+
+

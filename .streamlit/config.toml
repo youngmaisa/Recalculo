@@ -1,0 +1,6 @@
+[theme]
+base="light"
+primaryColor="#7880ef"
+
+[server]
+enableXsrfProtection=false
