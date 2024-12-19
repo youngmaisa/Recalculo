@@ -35,6 +35,8 @@ def calcular_deciles_personalizados(dataframe, columnas_orden):
 df = calcular_deciles_personalizados(df_original, columnas_orden= ['Urs', 'URM2%'])
 df = df[['DEPARTAMENTO', 'SSNN FINAL', 'TIPO', 'DNI', 'Urs', 'DECIL', 'QVENTAS', 'URM2%', 'QNP%', 'HC', 'Q JUL', 'FLAG 30']]
 
+
+
 st.subheader("DataFrame Original")
 st.dataframe(df, use_container_width=True)
 
@@ -159,3 +161,15 @@ if not df_recalculado.empty:
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
+st.markdown(
+    """
+    <style>
+    .block-container {
+        padding: 50px;
+        max-width: 95%
+    }
+    </style>
+   
+    """,
+    unsafe_allow_html=True
+)
