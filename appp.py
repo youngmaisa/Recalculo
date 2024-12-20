@@ -6,8 +6,7 @@ from PIL import Image
 import traceback  
 import io
 import calendar
-import matplotlib.pyplot as plt
-from io import BytesIO
+
 
 
 img = Image.open('entel.jpg')
