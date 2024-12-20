@@ -6,6 +6,8 @@ from PIL import Image
 import traceback  
 import io
 import calendar
+import matplotlib.pyplot as plt
+from io import BytesIO
 
 
 img = Image.open('entel.jpg')
@@ -354,28 +356,13 @@ def calcular_grupos(dataframe, num_grupos, columnas_orden):
 
 
 
-meses_espanol_a_numero = {
-    "ENERO": 1,
-    "FEBRERO": 2,
-    "MARZO": 3,
-    "ABRIL": 4,
-    "MAYO": 5,
-    "JUNIO": 6,
-    "JULIO": 7,
-    "AGOSTO": 8,
-    "SETIEMBRE": 9,
-    "OCTUBRE": 10,
-    "NOVIEMBRE": 11,
-    "DICIEMBRE": 12
-}
-
 def ordenar_meses(meses):
-   
-    meses_numericos = [meses_espanol_a_numero[mes] for mes in meses]
-    
-    meses_ordenados = [mes for _, mes in sorted(zip(meses_numericos, meses))]
+    orden_cronologico = [
+        "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", 
+        "JULIO", "AGOSTO", "SETIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"
+    ]
+    meses_ordenados = sorted(meses, key=lambda mes: orden_cronologico.index(mes.upper()))
     return meses_ordenados
-
 
 
 def historico():
@@ -396,7 +383,7 @@ def historico():
 
     meses_disponibles = [archivo.split()[-1].replace('.xlsx', '') for archivo in archivos_filtrados]
     meses_disponibles = ordenar_meses(meses_disponibles)
-    #meses_disponibles.sort()
+ 
 
     num_grupos2 = st.number_input("Número de grupos", min_value=2, max_value=50, value=10)
     subcanal_filtro2 = st.multiselect("Subcanal", options=["DAE", "DESARROLLADOR", "FULL PREPAGO DAE", "FULL PREPAGO DD", "HC EMO", "HC EMO MERCADO"], default=[])
@@ -478,7 +465,40 @@ def historico():
             
 
       
-        st.dataframe(df_completo, use_container_width=True)
+        
+        df_completo['Evolución'] = df_completo.apply(
+            lambda row: [row[mes] for mes in meses_disponibles],
+            axis=1
+        )
+
+        df_completo['Bandera'] = "Vacio"
+       
+        st.dataframe(
+            df_completo,
+            column_config={
+                "Evolución": st.column_config.BarChartColumn(
+                    "Evolución de deciles",
+                    y_min=0,
+                    y_max=num_grupos2
+                )
+            },
+            use_container_width=True
+        )
+
+        
+
+        dni_seleccionado = st.selectbox("Selecciona un DNI para ver el progreso", df_completo['DNI'])
+
+        if dni_seleccionado:
+            progreso = df_completo[df_completo['DNI'] == dni_seleccionado][meses_disponibles].values.flatten()
+            
+          
+            df_progreso = pd.DataFrame({'Mes': meses_disponibles, 'Progreso': progreso})
+            df_progreso['Mes'] = pd.Categorical(df_progreso['Mes'], categories=meses_disponibles, ordered=True)
+            df_progreso = df_progreso.sort_values('Mes')
+
+            st.line_chart(df_progreso.set_index('Mes'))
+
     else:
         st.warning("No hay datos para los filtros seleccionados.")
 
@@ -487,7 +507,7 @@ def historico():
 st.sidebar.title("Navegación")
 opcion = st.sidebar.radio("", ["Recalculo", "Historico"])
 
-# Mostrar el contenido según la opción seleccionada
+
 if opcion == "Recalculo":
     recalculo()
 elif opcion == "Historico":
