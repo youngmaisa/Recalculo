@@ -197,7 +197,7 @@ def recalculo():
                             columnas_a_mostrar_pivote = ['Subcanal', 'QHc', 'QVentas', 'QUrs', 'URM2%', 'SS', 'PagoTotal'] 
                             
 
-                        st.table(tabla_pivote[columnas_a_mostrar_pivote])
+                        st.dataframe(tabla_pivote[columnas_a_mostrar_pivote])
 
 
                         # TABLA INFO DECILES
@@ -256,7 +256,7 @@ def recalculo():
                             columnas_a_mostrar_resumen = ['Grupo', 'QHc', 'QVentas', 'QUrs', 'URM2%', 'SS', 'PagoTotal']  
                             
                         
-                        st.table(resumen_recalculado[columnas_a_mostrar_resumen])
+                        st.dataframe(resumen_recalculado[columnas_a_mostrar_resumen])
 
 
                         # TABLA RECALCULADA
