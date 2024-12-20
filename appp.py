@@ -5,6 +5,7 @@ import numpy as np
 from PIL import Image
 import traceback  
 import io
+import calendar
 
 
 img = Image.open('entel.jpg')
@@ -21,7 +22,7 @@ def recalculo():
         
         archivos_filtrados = [archivo for archivo in archivos if "NUEVA BASE - PROACTIVO" in archivo]
         
-        meses_disponibles = [archivo.split()[-1] for archivo in archivos_filtrados]
+        meses_disponibles = [archivo.split()[-1].replace('.xlsx', '') for archivo in archivos_filtrados]
         meses_disponibles.sort()
 
         if meses_disponibles:
@@ -332,9 +333,156 @@ def recalculo():
 
 
 
-def historico():
-    st.write("nuevo")
 
+def calcular_grupos(dataframe, num_grupos, columnas_orden):
+    dataframe = dataframe.copy()
+    dataframe = dataframe.sort_values(by=columnas_orden, ascending=[False] * len(columnas_orden)).reset_index(drop=True)
+    
+    total_filas = len(dataframe)
+    tam_grupo = total_filas // num_grupos
+    restos = total_filas % num_grupos  
+    
+   
+    grupos = []
+    for grupo in range(1, num_grupos + 1):
+        tam_actual = tam_grupo + (1 if grupo <= restos else 0)   
+        grupos.extend([grupo] * tam_actual)
+    
+    dataframe['Grupo'] = grupos[:total_filas]
+   
+    return dataframe
+
+
+
+meses_espanol_a_numero = {
+    "ENERO": 1,
+    "FEBRERO": 2,
+    "MARZO": 3,
+    "ABRIL": 4,
+    "MAYO": 5,
+    "JUNIO": 6,
+    "JULIO": 7,
+    "AGOSTO": 8,
+    "SETIEMBRE": 9,
+    "OCTUBRE": 10,
+    "NOVIEMBRE": 11,
+    "DICIEMBRE": 12
+}
+
+def ordenar_meses(meses):
+   
+    meses_numericos = [meses_espanol_a_numero[mes] for mes in meses]
+    
+    meses_ordenados = [mes for _, mes in sorted(zip(meses_numericos, meses))]
+    return meses_ordenados
+
+
+
+def historico():
+    if not os.path.exists(carpeta_archivos):
+        st.error(f"La carpeta '{carpeta_archivos}' no existe.")
+        return
+
+    archivos = os.listdir(carpeta_archivos)
+    archivos_filtrados = [
+        os.path.join(carpeta_archivos, archivo)
+        for archivo in archivos
+        if "NUEVA BASE - PROACTIVO" in archivo and archivo.endswith(".xlsx")
+    ]
+
+    if not archivos_filtrados:
+        st.warning("No se encontraron archivos con el nombre esperado.")
+        return
+
+    meses_disponibles = [archivo.split()[-1].replace('.xlsx', '') for archivo in archivos_filtrados]
+    meses_disponibles = ordenar_meses(meses_disponibles)
+    #meses_disponibles.sort()
+
+    num_grupos2 = st.number_input("Número de grupos", min_value=2, max_value=50, value=10)
+    subcanal_filtro2 = st.multiselect("Subcanal", options=["DAE", "DESARROLLADOR", "FULL PREPAGO DAE", "FULL PREPAGO DD", "HC EMO", "HC EMO MERCADO"], default=[])
+    departamento_filtro2 = st.multiselect("Departamento", options=["AMAZONAS", "ANCASH", "APURIMAC", "LIMA"], default=[])
+
+    
+    filtros_seleccionados = st.slider(
+        "Rango de ventas:",
+        min_value=int(0),
+        max_value=int(1000),
+        value=(int(0), int(1000))
+    )
+
+    
+    resultados = []
+
+    for archivo, mes in zip(archivos_filtrados, meses_disponibles):
+        df = pd.read_excel(archivo)  
+        df['URM2%'] = round((df['Urs'] / df['QVENTAS'])*100, 1)
+
+        df_filtrado = df.copy()
+
+        if subcanal_filtro2:
+            df_filtrado = df[df["TIPO"].isin(subcanal_filtro2)]
+        if departamento_filtro2:
+            df_filtrado = df[df["DEPARTAMENTO"].isin(departamento_filtro2)]
+
+        if filtros_seleccionados:
+            df_filtrado = df_filtrado[ 
+                (df_filtrado["QVENTAS"] >= filtros_seleccionados[0]) & 
+                (df_filtrado["QVENTAS"] <= filtros_seleccionados[1])
+            ]
+
+
+        if not df_filtrado.empty:
+            df_con_grupos = calcular_grupos(df_filtrado, num_grupos2, columnas_orden=["Urs", "URM2%"])
+            df_con_grupos['MES'] = mes
+            resultados.append(df_con_grupos)
+        else:
+            df_con_grupos = calcular_grupos(pd.DataFrame(columns=df_filtrado.columns), num_grupos2, columnas_orden=["Urs", "URM2%"])
+            df_con_grupos['MES'] = mes
+            resultados.append(df_con_grupos)
+
+
+
+    if resultados:
+       
+        try:
+            df_total = pd.concat(resultados, ignore_index=True)
+        except Exception as e:
+            st.error(f"Error al concatenar resultados: {e}")
+            return
+
+        if 'DNI' not in df_total.columns or 'Grupo' not in df_total.columns or 'MES' not in df_total.columns:
+            st.error("El DataFrame no contiene las columnas requeridas: DNI, Grupo, MES")
+            return
+
+        df_total['DNI'] = df_total['DNI'].astype('str')
+        todos_dnis = pd.DataFrame(df_total['DNI'].unique(), columns=['DNI']).sort_values(by='DNI')
+        todos_dnis = todos_dnis.reset_index(drop=True)
+        df_completo = todos_dnis.copy()
+        
+
+        for mes in meses_disponibles:
+           
+            df_mes = df_total[df_total['MES'] == mes][['DNI', 'Grupo']]
+
+            if df_mes.empty:
+                st.warning(f"No hay datos para el mes {mes}. Se llenará con NaN.")
+                df_mes['Grupo'] = None
+           
+            df_mes_completo = todos_dnis.merge(df_mes, on='DNI', how='left')
+           
+            
+            df_mes_completo = df_mes_completo.rename(columns={'Grupo': mes})
+           
+            df_completo = df_completo.merge(df_mes_completo[['DNI', mes]], on='DNI', how='left')
+            df_completo = df_completo.fillna(0)
+            
+
+      
+        st.dataframe(df_completo, use_container_width=True)
+    else:
+        st.warning("No hay datos para los filtros seleccionados.")
+
+       
 
 st.sidebar.title("Navegación")
 opcion = st.sidebar.radio("", ["Recalculo", "Historico"])
