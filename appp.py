@@ -5,12 +5,10 @@ import numpy as np
 from PIL import Image
 import traceback  
 import io
-import calendar
-
 
 
 carpeta = 'archivos'
-img = Image.open('gallery\entel.jpg')
+img = Image.open('entel.jpg')
 st.set_page_config(page_title='Recalculo Entel', page_icon=img, layout='wide')
 st.sidebar.title('Recalculo Entel')
 
