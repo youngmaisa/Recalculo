@@ -6,8 +6,7 @@ from PIL import Image
 import traceback  
 import io
 import calendar
-from markdownlit import mdlit
-from streamlit_pills import pills
+
 
 
 carpeta = 'archivos'
