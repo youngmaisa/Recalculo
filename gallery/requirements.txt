@@ -2,4 +2,4 @@ pandas
 openpyxl
 streamlit
 xlsxwriter
-
+streamlit-extras
