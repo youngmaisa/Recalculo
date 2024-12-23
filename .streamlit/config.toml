@@ -1,6 +1,5 @@
 [theme]
-base="light"
-primaryColor="#7880ef"
 
-[server]
-enableXsrfProtection=false
+base="light"
+primaryColor="#1E3A8A"
+font = "sans serif"
