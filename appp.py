@@ -6,9 +6,7 @@ from PIL import Image
 import traceback  
 import io
 import calendar
-from streamlit_extras.row import row
 from markdownlit import mdlit
-
 from streamlit_pills import pills
 
 
