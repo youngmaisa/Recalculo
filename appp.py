@@ -202,7 +202,7 @@ def recalculo():
         df = dataframe_mes(mes=filtros_mes, carpeta_archivos=carpeta)
        
         df = calcular_grupos_personalizados(dataframe= df,num_grupos= num_grupos, columnas_orden=['URM2%', 'QUrs', 'QVentas'])
-        st.dataframe(df)
+       # st.dataframe(df)
 
         df_filtrado = df.copy()
 
