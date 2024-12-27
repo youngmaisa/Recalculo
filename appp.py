@@ -55,13 +55,11 @@ def calcular_grupos_personalizados(dataframe, num_grupos, columnas_orden):
     dataframe['Grupo'] = grupos[:total_filas]
     
     
-    limites = dataframe.groupby('Grupo')[columnas_orden].agg(['min', 'max'])
-  
+    limites = dataframe.groupby('Grupo')[columnas_orden[0]].agg(['min', 'max'])
+
+    # Crear la columna 'RangoGrupo' con los límites de la primera columna
     dataframe['RangoGrupo'] = dataframe['Grupo'].map(
-        lambda grupo: ', '.join(
-            f"{col}: ({limites.loc[grupo, (col, 'max')]}-{limites.loc[grupo, (col, 'min')]})"
-            for col in columnas_orden
-        )
+        lambda grupo: f"{columnas_orden[0]}: ({limites.loc[grupo, ('max')]}-{limites.loc[grupo, ('min')]})"
     )
     
     return dataframe
@@ -341,6 +339,22 @@ def recalculo():
                 columnas_a_mostrar_resumen = ['Grupo', 'RangoGrupo', 'QHc', 'QVentas', 'QUrs', 'URM2%', 'SS', 'PagoTotal']  
                 
             st.dataframe(resumen_recalculado[columnas_a_mostrar_resumen], use_container_width=True)
+
+
+            # descarga
+            towrite_resumen = io.BytesIO()
+            with pd.ExcelWriter(towrite_resumen, engine="xlsxwriter") as writer:
+                resumen_recalculado.to_excel(writer, index=False, sheet_name="Tabla Recalculada")
+            towrite_resumen.seek(0)
+
+            st.download_button(
+                label="Descargar grupos",
+                data=towrite_resumen,
+                file_name="dataframe_grupos.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
+
             st.markdown("---")
 
             # --------------------------------------------------------------------------------------
@@ -394,13 +408,14 @@ def recalculo():
                 st.dataframe(df_descarga[columnas_a_mostrar], use_container_width=True)
 
 
+            # descarga
             towrite_detallada = io.BytesIO()
             with pd.ExcelWriter(towrite_detallada, engine="xlsxwriter") as writer:
                 df_descarga.to_excel(writer, index=False, sheet_name="Tabla Recalculada")
             towrite_detallada.seek(0)
 
             st.download_button(
-                label="Descargar",
+                label="Descargar tabla detalle DNI",
                 data=towrite_detallada,
                 file_name="dataframe_recalculado.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -455,13 +470,13 @@ def historico(carpeta_archivos=carpeta):
 
 
         if not df_filtrado.empty:
-            df_con_grupos = calcular_grupos_personalizados(
+            df_mes_con_grupos = calcular_grupos_personalizados(
                 df_filtrado, 
                 num_grupos, 
                 columnas_orden=["URM2%", 'QUrs', 'QVentas']
             )
-            df_con_grupos['Mes'] = mes
-            resultados.append(df_con_grupos)
+            df_mes_con_grupos['Mes'] = mes
+            resultados.append(df_mes_con_grupos)
 
 
     if resultados:
@@ -489,7 +504,7 @@ def historico(carpeta_archivos=carpeta):
 
         df_completo['Bandera'] = "Vacio"
 
-        
+         
       
         if dni_ingresado: 
             try:
@@ -519,15 +534,34 @@ def historico(carpeta_archivos=carpeta):
                         'Progreso': progreso
                     })
 
-                    df_progreso['Mes'] = pd.Categorical(df_progreso['Mes'], categories=meses, ordered=True)
-                    df_progreso = df_progreso.sort_values('Mes')
+                
+                df_progreso['Mes'] = pd.Categorical(df_progreso['Mes'], categories=meses, ordered=True)
+                df_progreso = df_progreso.sort_values('Mes')
 
-                    st.line_chart(df_progreso.set_index('Mes')['Progreso'])
+              
+                df_progreso['Progreso'] = num_grupos + 1 - df_progreso['Progreso']
 
+                
+                st.line_chart(df_progreso.set_index('Mes')['Progreso'])
+
+             
+                st.markdown("""
+                    <style>
+                        .streamlit-expanderHeader {
+                            font-size: 18px;
+                        }
+                        .stGraph {
+                            transform: scaleY(-1);
+                        }
+                    </style>
+                """, unsafe_allow_html=True)
+
+                    
             except ValueError:
                 st.error("Por favor, ingresa un DNI válido (número entero).")
         else:  
             st.write("Mostrando todos los registros:")
+           
             st.dataframe(
                 df_completo,
                 column_config={
@@ -539,6 +573,24 @@ def historico(carpeta_archivos=carpeta):
                 },
                 use_container_width=True
             )
+
+            
+            df_seleccionado = df_completo
+
+
+        # descarga
+        towrite_seleccionado = io.BytesIO()
+        with pd.ExcelWriter(towrite_seleccionado, engine="xlsxwriter") as writer:
+            df_seleccionado.to_excel(writer, index=False, sheet_name="Tabla Recalculada")
+        towrite_seleccionado.seek(0)
+
+        st.download_button(
+            label="Descargar",
+            data=towrite_seleccionado,
+            file_name="dataframe_historico.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
     else:
         st.warning("No hay datos para los filtros seleccionados.")
 
