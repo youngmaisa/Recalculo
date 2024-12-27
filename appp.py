@@ -15,7 +15,7 @@ st.sidebar.title('Recalculo Entel')
 
 with st.sidebar:
     
-        with st.expander("*📖 Cómo usar este programa*"):
+        with st.expander("📖 Cómo usar este programa"):
             st.markdown("""
             ## Bienvenidos! 🌟
             
@@ -34,26 +34,37 @@ with st.sidebar:
             - Los filtros de **Subcanal**,  **Nro de grupos**, **Departamento**, y **Ventas** afectan esta vista, excepto el filtro de mes, ya que se enfoca en consolidar datos de varios períodos.
           
             ### Detalles Adicionales 🛠️
-            - Los grupos se ordenan desde el **Grupo 1** (mayor cantidad de QUrs) hacia abajo.
+            - Los grupos se ordenan desde el **Grupo 1** (mayor cantidad de URM2%, QUrs y QVentas) hacia abajo.
             """)
 
 def calcular_grupos_personalizados(dataframe, num_grupos, columnas_orden):
-                        dataframe = dataframe.copy()
-                        dataframe = dataframe.sort_values(by=columnas_orden, ascending=[False] * len(columnas_orden)).reset_index(drop=True)
-                        
-                        total_filas = len(dataframe)
-                        tam_grupo = total_filas // num_grupos
-                        restos = total_filas % num_grupos  # Filas adicionales 
-                        
-                        # Asignar grupos
-                        grupos = []
-                        for grupo in range(1, num_grupos + 1):
-                            tam_actual = tam_grupo + (1 if grupo <= restos else 0)  # Agrega 1 fila extra- primeros 
-                            grupos.extend([grupo] * tam_actual)
-                        
-                        dataframe['Grupo'] = grupos[:total_filas]
-                        return dataframe
+    dataframe = dataframe.copy()
+    dataframe = dataframe.sort_values(by=columnas_orden, ascending=[False] * len(columnas_orden)).reset_index(drop=True)
+    
+    total_filas = len(dataframe)
+    tam_grupo = total_filas // num_grupos  # Tamaño base de cada grupo
+    restos = total_filas % num_grupos    
 
+    
+    grupos = []
+    for grupo in range(1, num_grupos + 1):
+        tam_actual = tam_grupo + (1 if grupo > num_grupos - restos else 0)  # Asignar el resto a los últimos grupos
+        grupos.extend([grupo] * tam_actual)
+    
+    
+    dataframe['Grupo'] = grupos[:total_filas]
+    
+    
+    limites = dataframe.groupby('Grupo')[columnas_orden].agg(['min', 'max'])
+  
+    dataframe['RangoGrupo'] = dataframe['Grupo'].map(
+        lambda grupo: ', '.join(
+            f"{col}: ({limites.loc[grupo, (col, 'max')]}-{limites.loc[grupo, (col, 'min')]})"
+            for col in columnas_orden
+        )
+    )
+    
+    return dataframe
 
 def archivos_listados(carpeta_archivos):
     if os.path.exists(carpeta_archivos):
@@ -62,7 +73,7 @@ def archivos_listados(carpeta_archivos):
         return archivos_filtrados
     else:
         print(f"La carpeta no existe: {carpeta_archivos}")
-        return [] 
+        return []  
 
 def meses_disponibles(carpeta_archivos):
     archivos = archivos_listados(carpeta_archivos)
@@ -93,7 +104,7 @@ def dataframe_mes(mes, carpeta_archivos):
     df_original = pd.read_excel(archivo_path, dtype={'DNI': str})   
     df_original['MES'] = df_original['MES'].astype(str)
     df_original['HC'] = 1
-    df_original['URM2%'] = (df_original['Urs'] / df_original['QVENTAS']) * 100
+    df_original['URM2%'] = round((df_original['Urs'] / df_original['QVENTAS']) * 100,2)
     df_original['PagoTotal'] = (df_original['ACELERADOR'] + df_original['PLANILLA'] + df_original['BONO']+ df_original['CAMPAÑA']+ df_original['OTROS'])
     
     df_original = df_original.rename(columns={
@@ -190,8 +201,8 @@ def recalculo():
     try:
         df = dataframe_mes(mes=filtros_mes, carpeta_archivos=carpeta)
        
-        df = calcular_grupos_personalizados(dataframe= df,num_grupos= num_grupos, columnas_orden=['QUrs', 'URM2%'])
-       
+        df = calcular_grupos_personalizados(dataframe= df,num_grupos= num_grupos, columnas_orden=['URM2%', 'QUrs', 'QVentas'])
+        st.dataframe(df)
 
         df_filtrado = df.copy()
 
@@ -210,8 +221,8 @@ def recalculo():
 
         # RECALCULO         
         if not df_filtrado.empty:
-            df_recalculado = calcular_grupos_personalizados(df_filtrado, num_grupos= num_grupos , columnas_orden= ['QUrs', 'URM2%'])
-            df_recalculado['URM2%'] = (df_recalculado['QUrs'] / df_recalculado['QVentas']) * 100
+            df_recalculado = calcular_grupos_personalizados(df_filtrado, num_grupos= num_grupos , columnas_orden= ['URM2%', 'QUrs', 'QVentas'])
+            df_recalculado['URM2%'] = round((df_recalculado['QUrs'] / df_recalculado['QVentas']) * 100,2)
         else:
             df_recalculado = pd.DataFrame(columns=df.columns)
 
@@ -237,7 +248,7 @@ def recalculo():
                 Otros = ('Otros', 'sum')
             ).reset_index()
             
-            tabla_pivote['URM2%'] = round((tabla_pivote['QUrs'] / tabla_pivote['QVentas']) * 100,1)
+            tabla_pivote['URM2%'] = (tabla_pivote['QUrs'] / tabla_pivote['QVentas']) * 100
         
             tabla_pivote = tabla_pivote.sort_values(by='QHc', ascending=False).reset_index(drop=True)
 
@@ -263,9 +274,9 @@ def recalculo():
             mostrar_columnas_adicionales_pivote = st.checkbox("Mostrar adicionales .")
 
             if mostrar_columnas_adicionales_pivote:
-                columnas_a_mostrar_pivote = ['Subcanal', 'QHc', 'QVentas', 'QUrs', 'URM2%', 'SS', 'PagoTotal', 'Acelerador', 'Planilla', 'Bono', 'Campaña', 'Otros']
+                columnas_a_mostrar_pivote = ['Subcanal', 'QHc', 'QVentas', 'QUrs','URM2%', 'SS', 'PagoTotal', 'Acelerador', 'Planilla', 'Bono', 'Campaña', 'Otros']
             else:
-                columnas_a_mostrar_pivote = ['Subcanal', 'QHc', 'QVentas', 'QUrs', 'URM2%', 'SS', 'PagoTotal'] 
+                columnas_a_mostrar_pivote = ['Subcanal', 'QHc', 'QVentas', 'QUrs', 'URM2%','SS', 'PagoTotal'] 
                 
             st.dataframe(tabla_pivote[columnas_a_mostrar_pivote], use_container_width=True)
             st.markdown("---")
@@ -281,6 +292,7 @@ def recalculo():
 
             def resumen_deciles(dataframe, decil_col):
                 resumen = dataframe.groupby(decil_col).agg(
+                    RangoGrupo= ('RangoGrupo', 'first'),
                     QHc=('QHc', 'sum'),
                     QUrs=('QUrs', 'sum'),
                     QVentas=('QVentas', 'sum'),
@@ -293,10 +305,11 @@ def recalculo():
                     Otros = ('Otros', 'sum')
                 ).reset_index().rename(columns={decil_col: 'Grupo'})
 
-                resumen['URM2%'] = round((resumen['QUrs'] / resumen['QVentas']) * 100,1)
+                resumen['URM2%'] = (resumen['QUrs'] / resumen['QVentas']) * 100
 
                 totales = pd.DataFrame({
                     'Grupo': ['Total'],
+                    'RangoGrupo': [' '],
                     'QHc': [resumen['QHc'].sum()],
                     'QVentas': [resumen['QVentas'].sum()],
                     'QUrs': [resumen['QUrs'].sum()],
@@ -312,7 +325,7 @@ def recalculo():
 
                 resumen = pd.concat([resumen, totales], ignore_index=True)
 
-                resumen = resumen[['Grupo', 'QHc', 'QVentas', 'QUrs', 'URM2%', 'SS', 'PagoTotal', 'Acelerador', 'Planilla', 'Bono', 'Campaña', 'Otros']]
+                resumen = resumen[['Grupo', 'RangoGrupo','QHc', 'QVentas', 'QUrs', 'URM2%', 'SS', 'PagoTotal', 'Acelerador', 'Planilla', 'Bono', 'Campaña', 'Otros']]
 
                 return resumen
             
@@ -322,10 +335,10 @@ def recalculo():
             mostrar_columnas_adicionales_resumen = st.checkbox("Mostrar adicionales ..")
 
             if mostrar_columnas_adicionales_resumen:
-                columnas_a_mostrar_resumen = ['Grupo', 'QHc', 'QVentas', 'QUrs', 'URM2%', 'SS', 'PagoTotal',  'Acelerador' , 'Planilla', 'Bono', 'Campaña', 'Otros']  
+                columnas_a_mostrar_resumen = ['Grupo', 'RangoGrupo','QHc', 'QVentas', 'QUrs', 'URM2%', 'SS', 'PagoTotal',  'Acelerador' , 'Planilla', 'Bono', 'Campaña', 'Otros']  
                 
             else:
-                columnas_a_mostrar_resumen = ['Grupo', 'QHc', 'QVentas', 'QUrs', 'URM2%', 'SS', 'PagoTotal']  
+                columnas_a_mostrar_resumen = ['Grupo', 'RangoGrupo', 'QHc', 'QVentas', 'QUrs', 'URM2%', 'SS', 'PagoTotal']  
                 
             st.dataframe(resumen_recalculado[columnas_a_mostrar_resumen], use_container_width=True)
             st.markdown("---")
@@ -337,7 +350,8 @@ def recalculo():
             st.markdown("""### :mag: Tabla detalle DNI""")
             st.info("""Puedes visualizar un **dataframe detallado** con los grupos calculados, mostrando los **DNIs asociados a cada grupo**.  Si deseas observar el detalle del **Pago Total**, simplemente haz clic en la opción **"Mostrar adicionales"**.""")
 
-            df_descarga = df_recalculado.sort_values(by=['QUrs', 'URM2%'], ascending=[False, False])
+            #df_descarga = df_recalculado.sort_values(by=['URM2%'], ascending=[False])
+            df_descarga = df_recalculado
 
             filtro1, filtro2 = st.columns([2,2])
             with filtro1:
@@ -444,7 +458,7 @@ def historico(carpeta_archivos=carpeta):
             df_con_grupos = calcular_grupos_personalizados(
                 df_filtrado, 
                 num_grupos, 
-                columnas_orden=["QUrs", "URM2%"]
+                columnas_orden=["URM2%", 'QUrs', 'QVentas']
             )
             df_con_grupos['Mes'] = mes
             resultados.append(df_con_grupos)
@@ -479,7 +493,7 @@ def historico(carpeta_archivos=carpeta):
       
         if dni_ingresado: 
             try:
-                #dni_ingresado = str(dni_ingresado)  
+                
                 df_seleccionado = df_completo[df_completo['DNI'] == dni_ingresado]
 
                 if df_seleccionado.empty:  
