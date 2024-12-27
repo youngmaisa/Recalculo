@@ -42,27 +42,27 @@ def calcular_grupos_personalizados(dataframe, num_grupos, columnas_orden):
     dataframe = dataframe.sort_values(by=columnas_orden, ascending=[False] * len(columnas_orden)).reset_index(drop=True)
     
     total_filas = len(dataframe)
-    tam_grupo = total_filas // num_grupos  # Tamaño base de cada grupo
-    restos = total_filas % num_grupos    
-
+    tam_grupo = total_filas // num_grupos  
+    restos = total_filas % num_grupos
     
     grupos = []
     for grupo in range(1, num_grupos + 1):
         tam_actual = tam_grupo + (1 if grupo > num_grupos - restos else 0)  # Asignar el resto a los últimos grupos
         grupos.extend([grupo] * tam_actual)
-    
-    
+
     dataframe['Grupo'] = grupos[:total_filas]
-    
+
     
     limites = dataframe.groupby('Grupo')[columnas_orden[0]].agg(['min', 'max'])
 
-    # Crear la columna 'RangoGrupo' con los límites de la primera columna
     dataframe['RangoGrupo'] = dataframe['Grupo'].map(
         lambda grupo: f"{columnas_orden[0]}: ({limites.loc[grupo, ('max')]}-{limites.loc[grupo, ('min')]})"
     )
     
+
     return dataframe
+
+
 
 def archivos_listados(carpeta_archivos):
     if os.path.exists(carpeta_archivos):
@@ -405,8 +405,8 @@ def recalculo():
                 except ValueError:
                     st.error("Por favor, ingresa un DNI válido (número entero).")
             else:  
-                st.dataframe(df_descarga[columnas_a_mostrar], use_container_width=True)
-
+                st.dataframe(df_descarga[columnas_a_mostrar], use_container_width=True )
+              
 
             # descarga
             towrite_detallada = io.BytesIO()
