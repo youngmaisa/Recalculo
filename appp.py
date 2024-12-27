@@ -544,17 +544,8 @@ def historico(carpeta_archivos=carpeta):
                 
                 st.line_chart(df_progreso.set_index('Mes')['Progreso'])
 
-             
-                st.markdown("""
-                    <style>
-                        .streamlit-expanderHeader {
-                            font-size: 18px;
-                        }
-                        .stGraph {
-                            transform: scaleY(-1);
-                        }
-                    </style>
-                """, unsafe_allow_html=True)
+                
+                
 
                     
             except ValueError:
