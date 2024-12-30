@@ -211,10 +211,10 @@ def rango_ventas(carpeta_archivos):
 def definir_carpeta_canal(canal):
     carpeta = ""
     if canal == "PROACTIVO":
-        carpeta = r"C:\Users\mmedinam\OneDrive - Entel Peru S.A\Documentos - EntelDrive_ __ Canal Masivo\Archivos_Recalculo\BASES\2024\PROACTIVO_2024"
+        carpeta = "data/PROACTIVO_2024"
     else:
         
-        carpeta = r"C:\Users\mmedinam\OneDrive - Entel Peru S.A\Documentos - EntelDrive_ __ Canal Masivo\Archivos_Recalculo\BASES\2024\RECEPTIVO_2024"
+        carpeta = "data/RECEPTIVO_2024"
     return carpeta
 
 
