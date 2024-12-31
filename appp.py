@@ -11,5 +11,3 @@ import io
 
 img = Image.open('entel.jpg')
 st.set_page_config(page_title='Recalculo Entel', page_icon=img, layout='wide')
-
-

@@ -24,6 +24,8 @@ meses_orden = [
     "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", 
     "JULIO", "AGOSTO", "SETIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"
 ]
+
+
 tab_vista_normal, tab_vista_historica = \
     st.tabs(['VISTA NORMAL', 'VISTA HISTORICA'])
 
