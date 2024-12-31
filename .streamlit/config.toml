@@ -3,3 +3,7 @@
 base="light"
 primaryColor="#1E3A8A"
 font = "sans serif"
+
+
+[global]
+sidebarState = "expanded"
