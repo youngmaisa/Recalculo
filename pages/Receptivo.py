@@ -461,5 +461,3 @@ def normal(carpeta_archivos=carpeta_canal):
 
 with tab_vista_normal:
     normal()
-with tab_vista_historica:
-    normal()
