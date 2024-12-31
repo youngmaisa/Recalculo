@@ -493,11 +493,18 @@ def leer_archivos(carpeta_archivos):
 
 def historico(carpeta_archivos=carpeta_canal):
         
-
-    # lee carpeta de archivos del canal
-    #archivos = os.listdir(carpeta_archivos) 
-   #archivos = [os.path.join(carpeta_archivos, archivo) for archivo in archivos]
-    #meses = meses_disponibles(carpeta_archivos)
+   
+    st.markdown("""### :bar_chart: Tabla resumen""")
+    desempeños = ["Bueno", "Malo", "Neutro"]
+    filtro1, filtro2 = st.columns([2,2])
+    with filtro1:
+        dni_ingresado = st.text_input(f"Ingresa un {columna_DNI} para buscar su progreso:")
+    with filtro2:
+        desempeño_ingresado = st.multiselect(
+            "Selecciona el desempeño",
+            options=desempeños,
+            default=[]  
+        )
 
     
     # arma resultados por mes 
@@ -510,8 +517,6 @@ def historico(carpeta_archivos=carpeta_canal):
         #df[columna_DNI] = df[columna_DNI].str.zfill(8)  # rellenar 8 espacios
 
         df = dataframe_mes(mes, carpeta_archivos)
-
-        #df['URM2%'] = round((df['QUrs'] / df['QVentas'])*100, 1)
 
         df_filtrado = df.copy()
 
@@ -548,15 +553,8 @@ def historico(carpeta_archivos=carpeta_canal):
         df_completo = todos_dnis.copy()
         
 
-        st.markdown("""### :bar_chart: Tabla resumen""")
-        #dni_ingresado = st.text_input(f"Ingresa un {columna_DNI} para buscar su progreso:")
-
-        filtro1, filtro2 = st.columns([2,2])
-        with filtro1:
-            dni_ingresado = st.text_input(f"Ingresa un {columna_DNI} para buscar su progreso:")
-        
-
         meses_validos = [mes for mes in meses if not df_total[df_total['Mes'] == mes]['Grupo'].isnull().all()]
+        
         for mes in meses_validos:
             df_mes = df_total[df_total['Mes'] == mes][[columna_DNI, 'Grupo']]
             df_mes_completo = todos_dnis.merge(df_mes, on=columna_DNI, how='left').rename(columns={'Grupo': mes})
@@ -568,84 +566,45 @@ def historico(carpeta_archivos=carpeta_canal):
         axis=1
         )
 
-    #df_completo['Bandera'] = df_completo.apply(lambda row: asignar_bandera_promedio(row, meses_validos), axis=1)
-
-    
         df_completo[['Bandera', 'Desempeño']] = df_completo.apply(
             lambda row: pd.Series(asignar_bandera_promedio(row, meses_validos, num_grupos)),
             axis=1
         )
         
-        desempeños = ["Bueno", "Malo", "Neutro"]
-        with filtro2:
-            desempeño_ingresado = st.multiselect(
-                "Selecciona el desempeño",
-                options=desempeños,
-                default=[]  # Selecciona "Bueno" como opción predeterminada
-            )
-                    
+       
         if dni_ingresado: 
             try:
                 
                 df_seleccionado = df_completo[df_completo[columna_DNI] == dni_ingresado]
                 
-
                 if df_seleccionado.empty:  
                     st.warning(f"El {columna_DNI} ingresado no se encuentra en los datos.")
-                else:
-                    st.write(f"Registro del {columna_DNI} seleccionado:")
-                    st.dataframe(
-                        df_seleccionado,
-                        column_config={
-                            "Evolución": st.column_config.BarChartColumn(
-                                "Evolución de grupos",
-                                y_min=0,
-                                y_max=num_grupos
-                            )
-                        },
-                        use_container_width=True
-                    )
-
-                    #st.markdown("---")
-                    #progreso = df_seleccionado[meses].values.flatten()
-                    #df_progreso = pd.DataFrame({
-                    #    'Mes': meses,
-                    #    'Progreso': progreso
-                    #})
-
-                
-                #df_progreso['Mes'] = pd.Categorical(df_progreso['Mes'], categories=meses, ordered=True)
-                #df_progreso = df_progreso.sort_values('Mes')
-                #df_progreso['Progreso'] = num_grupos + 1 - df_progreso['Progreso']
-                #st.line_chart(df_progreso.set_index('Mes')['Progreso'])
-
                 
             except ValueError:
                 st.error(f"Por favor, ingresa un {columna_DNI} válido.")
 
         else:  
-            st.write("Mostrando todos los registros:")
             
-            if not desempeño_ingresado:  # Si la lista está vacía
+            if not desempeño_ingresado:  
                 df_seleccionado = df_completo
             else:
                 df_seleccionado = df_completo[df_completo['Desempeño'].isin(desempeño_ingresado)]
 
-            st.dataframe(
-                df_seleccionado,
-                column_config={
-                    "Evolución": st.column_config.BarChartColumn(
-                        "Evolución de grupos",
-                        y_min=0,
-                        y_max=num_grupos
-                    )
-                },
-                use_container_width=True
-            )
 
-            
-            #df_seleccionado = df_completo
 
+        st.dataframe(
+            df_seleccionado,
+            column_config={
+                "Evolución": st.column_config.BarChartColumn(
+                    "Evolución de grupos",
+                    y_min=0,
+                    y_max=num_grupos
+                )
+            },
+            use_container_width=True
+        )
+
+           
 
         # descargar
         towrite_seleccionado = io.BytesIO()

@@ -473,6 +473,19 @@ def asignar_bandera_promedio(row, meses_validos, num_grupos):
 
 def historico(carpeta_archivos=carpeta_canal):
         
+    
+    st.markdown("""### :bar_chart: Tabla resumen""")
+    desempeños = ["Bueno", "Malo", "Neutro"]
+    filtro1, filtro2 = st.columns([2,2])
+    with filtro1:
+        dni_ingresado = st.text_input(f"Ingresa un {columna_DNI} para buscar su progreso:")
+    with filtro2:
+        desempeño_ingresado = st.multiselect(
+            "Selecciona el desempeño",
+            options=desempeños,
+            default=[]  # Selecciona "Bueno" como opción predeterminada
+        )
+
 
     # lee carpeta de archivos del canal
     archivos = os.listdir(carpeta_archivos) 
@@ -528,13 +541,8 @@ def historico(carpeta_archivos=carpeta_canal):
         df_completo = todos_dnis.copy()
         
 
-        st.markdown("""### :bar_chart: Tabla resumen""")
-        #dni_ingresado = st.text_input(f"Ingresa un {columna_DNI} para buscar su progreso:")
-
-        filtro1, filtro2 = st.columns([2,2])
-        with filtro1:
-            dni_ingresado = st.text_input(f"Ingresa un {columna_DNI} para buscar su progreso:")
         
+
 
         meses_validos = [mes for mes in meses if not df_total[df_total['Mes'] == mes]['Grupo'].isnull().all()]
         for mes in meses_validos:
@@ -556,13 +564,7 @@ def historico(carpeta_archivos=carpeta_canal):
             axis=1
         )
         
-        desempeños = ["Bueno", "Malo", "Neutro"]
-        with filtro2:
-            desempeño_ingresado = st.multiselect(
-                "Selecciona el desempeño",
-                options=desempeños,
-                default=[]  # Selecciona "Bueno" como opción predeterminada
-            )
+       
                     
         if dni_ingresado: 
             try:
