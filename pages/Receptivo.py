@@ -100,6 +100,8 @@ def dataframe_mes(mes, carpeta_archivos):
 
     df_original = pd.read_excel(archivo_path, dtype={columna_DNI: str, 'DNI': str, 'DNI LIDER': str}, sheet_name="Vista_Agrupada") 
 
+    #df_original['DNI'] = df_original['DNI'].astype(str)
+    #df_original['DNI LIDER'] = df_original['DNI'].astype(str)
     df_original['MES'] = df_original['MES'].astype(str)
     df_original['HC'] = 1
     df_original['URM2%'] = round((df_original['Urs'] / df_original['QVENTAS']) * 100,2)
@@ -137,7 +139,7 @@ def dataframe_mes_normal(mes, carpeta_archivos):
 
     df_original = pd.read_excel(archivo_path, dtype={columna_DNI: str, 'DNI': str, 'DNI LIDER': str}, sheet_name="Vista_Normal") 
 
-    df_original['DNI'] = df_original['DNI'].astype(str)
+    #df_original['DNI'] = df_original['DNI'].astype(str)
     #df_original['MES'] = df_original['MES'].astype(str)
     #df_original['HC'] = 1
     #df_original['URM2%'] = round((df_original['Urs'] / df_original['QVENTAS']) * 100,2)
@@ -494,7 +496,7 @@ try:
             towrite_detallada.seek(0)
 
             st.download_button(
-                label="Descargar tabla detalle",
+                label="Descargar tabla vista 1",
                 data=towrite_detallada,
                 file_name="dataframe_recalculado.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -504,7 +506,6 @@ try:
         with tab_vista_2:
             
             df_recalculado_dnis_lider = df_recalculado[['DNI LIDER', 'Grupo']]
-
             df_recalculado_dnis_lider['DNI LIDER'] = df_recalculado['DNI LIDER'].str.strip()
 
 
@@ -513,38 +514,41 @@ try:
 
 
             df_resultado = df_recalculado_dnis_lider.merge(df_normal, on='DNI LIDER', how='left')
-        
-            st.dataframe(df_resultado[['Grupo', 'DNI LIDER', 'DNI']], use_container_width=True)
+            
+            df_descarga2 = df_resultado
+
+            #st.dataframe(df_resultado[['Grupo', 'DNI LIDER', 'DNI']], use_container_width=True)
            
-            #if grupos_seleccionados:
+            if grupos_seleccionados:
              #   df_recalculado_con_dnis = df_resultado[df_resultado['Grupo'].isin(grupos_seleccionados)]
-    
-            #if dni_ingresado:
-               # try:
-                  #  dni_ingresado = str(dni_ingresado)  
-                  #  df_recalculado_con_dnis = df_recalculado_con_dnis[df_recalculado_con_dnis['DNI LIDER'] == dni_ingresado]
+                df_descarga2 = df_resultado[df_resultado['Grupo'].isin(grupos_seleccionados)]
+            else:
+                df_descarga2 = df_resultado
+            
+            if dni_ingresado:
+                try:
+                    dni_ingresado = str(dni_ingresado)  
+                    df_descarga2 = df_descarga2[df_descarga2['DNI LIDER'] == dni_ingresado]
 
-                  #  if df_recalculado_con_dnis.empty:
-                   #     st.warning(f"El {columna_DNI} ingresado no se encuentra en los datos.")
-                  #  else:
-                     #   
-                     #   st.dataframe(df_recalculado_con_dnis[['Grupo', 'DNI LIDER', 'DNI']], use_container_width=True)
+                    if df_descarga2.empty:
+                        st.warning(f"El {columna_DNI} ingresado no se encuentra en los datos.")
+                    else:
+                        st.dataframe(df_descarga2[['Grupo', 'DNI LIDER', 'DNI']], use_container_width=True)
 
-                #except ValueError:
-                #    st.error(f"Por favor, ingresa un {columna_DNI} con el formato válido.")
-            #else:
-              # 
-               # st.dataframe(df_resultado[['Grupo', 'DNI LIDER', 'DNI']], use_container_width=True)
+                except ValueError:
+                   st.error(f"Por favor, ingresa un {columna_DNI} con el formato válido.")
+            else:
+                st.dataframe(df_descarga2[['Grupo', 'DNI LIDER', 'DNI']], use_container_width=True)
 
 
              # descarga
             towrite_f = io.BytesIO()
             with pd.ExcelWriter(towrite_f, engine="xlsxwriter") as writer:
-                df_resultado.to_excel(writer, index=False, sheet_name="Tabla Recalculada")
+                df_descarga2.to_excel(writer, index=False, sheet_name="Tabla Recalculada")
             towrite_f.seek(0)
 
             st.download_button(
-                label="Descargar ..",
+                label="Descargar tabla vista 2",
                 data=towrite_f,
                 file_name="dataframe_recalculado.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
