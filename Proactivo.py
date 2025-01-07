@@ -495,15 +495,16 @@ def asignar_bandera_promedio(row, meses_validos, num_grupos):
     promedio = sum(grupos_mes) / len(grupos_mes)
     umbral_bajo = num_grupos * 0.5
     umbral_alto = num_grupos * 0.6
-
     
     if promedio <= umbral_bajo:
-        tendencia = "Flecha arriba" if grupos_mes[-1] < grupos_mes[0] else "Flecha abajo"
-        simbolo = "✅🔼" if tendencia == "Flecha arriba" else "✅🔽"
+        #tendencia = "Flecha arriba" if grupos_mes[-1] < grupos_mes[0] else "Flecha abajo"
+        #simbolo = "✅🔼" if tendencia == "Flecha arriba" else "✅🔽"
+        simbolo = "✅"
         return simbolo, "Bueno"
     elif promedio >= umbral_alto:
-        tendencia = "Flecha arriba" if grupos_mes[-1] < grupos_mes[0] else "Flecha abajo"
-        simbolo = "❌🔼" if tendencia == "Flecha arriba" else "❌🔽"
+        #tendencia = "Flecha arriba" if grupos_mes[-1] < grupos_mes[0] else "Flecha abajo"
+        #simbolo = "❌🔼" if tendencia == "Flecha arriba" else "❌🔽"
+        simbolo = "❌"
         return simbolo, "Malo"
     else:
         return "⚪", "Neutro"
@@ -521,7 +522,7 @@ def historico_optimizado(carpeta_archivos=carpeta_archivos):
         desempeño_ingresado = st.multiselect(
             "Selecciona el desempeño",
             options=desempeños,
-            default=[]
+           default=[]
         )
 
     @st.cache_data
@@ -567,7 +568,7 @@ def historico_optimizado(carpeta_archivos=carpeta_archivos):
         #)
 
         df_completo[['Bandera', 'Desempeño']] = df_completo.apply(
-            lambda row: pd.Series(asignar_bandera_promedio(row, meses_validos, num_grupos)),
+           lambda row: pd.Series(asignar_bandera_promedio(row, meses_validos, num_grupos)),
             axis=1
         )
 
