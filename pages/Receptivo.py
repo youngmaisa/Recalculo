@@ -98,7 +98,7 @@ def dataframe_mes(mes, carpeta_archivos):
 
     #df_original = load_data(archivo_path, columna_DNI=columna_DNI)   
 
-    df_original = pd.read_excel(archivo_path, dtype={columna_DNI: str}) 
+    df_original = pd.read_excel(archivo_path, dtype={columna_DNI: str, 'DNI': str, 'DNI LIDER': str}, sheet_name="Vista_Agrupada") 
 
     df_original['MES'] = df_original['MES'].astype(str)
     df_original['HC'] = 1
@@ -126,6 +126,44 @@ def dataframe_mes(mes, carpeta_archivos):
     })
 
     return df_original
+
+
+
+def dataframe_mes_normal(mes, carpeta_archivos):
+
+    archivo_path = archivo_mes_ruta(mes, carpeta_archivos)
+
+    #df_original = load_data(archivo_path, columna_DNI=columna_DNI)   
+
+    df_original = pd.read_excel(archivo_path, dtype={columna_DNI: str, 'DNI': str, 'DNI LIDER': str}, sheet_name="Vista_Normal") 
+
+    df_original['DNI'] = df_original['DNI'].astype(str)
+    #df_original['MES'] = df_original['MES'].astype(str)
+    #df_original['HC'] = 1
+    #df_original['URM2%'] = round((df_original['Urs'] / df_original['QVENTAS']) * 100,2)
+    #df_original['PagoTotal'] = (df_original['ACELERADOR'] + df_original['PLANILLA'] + df_original['BONO']+ df_original['CAMPAÑA']+ df_original['OTROS'])
+    
+    df_original = df_original.rename(columns={
+            'MES': 'Mes',
+            'DEPARTAMENTO': 'Departamento',
+            'SSNN FINAL': 'Socio',
+            'KAM VF': 'Kam',
+            'HC': 'QHc',
+            'TIPO': 'Subcanal',
+            columna_DNI: columna_DNI,
+            'GRUPO': 'Grupo',
+            'QVENTAS': 'PP',
+            'Urs': 'QUrs',
+            'PLANILLA': 'Planilla',
+            'ACELERADOR': 'Acelerador',
+            'PLANILLA': 'Planilla',
+            'ACELERADOR': 'Acelerador',
+            'BONO': 'Bono',
+            'CAMPAÑA': 'Campaña',
+            'OTROS': 'Otros'
+    })
+
+    return df_original[['DNI LIDER', 'DNI']]
     
 
 
@@ -330,6 +368,10 @@ try:
     df = dataframe_mes(filtro_mes, carpeta_archivos)
     df = calcular_grupos_personalizados(dataframe= df,num_grupos= num_grupos, columnas_orden=['URM2%', 'QUrs', 'PP'])
 
+    ####
+    df_normal = dataframe_mes_normal(filtro_mes, carpeta_archivos)
+    #st.dataframe(df_normal)
+
     df_filtrado = aplicar_filtros(df)
 
     if not df_filtrado.empty:
@@ -340,8 +382,9 @@ try:
         df_recalculado = pd.DataFrame(columns=df.columns)
 
 
-    if not df_recalculado.empty:
+  
 
+    if not df_recalculado.empty:
 
         # Tabla Resumen Inicial  ------------------------------
         st.markdown("""### :page_facing_up: Resumen Inicial""")
@@ -406,52 +449,107 @@ try:
         with filtro2:
             dni_ingresado = st.text_input(f"Ingresa un {columna_DNI}:")
 
-        mostrar_columnas_adicionales = st.checkbox("Mostrar adicionales ...")
-        
+        # VISTAS 
+        tab_vista_1, tab_vista_2= \
+            st.tabs(['VISTA 1', 'VISTA 2'])
 
-        df_descarga = df_recalculado # df_descarga es igual a df recalculado
 
-        if mostrar_columnas_adicionales:
-            columnas_a_mostrar = ['Departamento', 'Socio', 'Kam' ,'Subcanal', columna_DNI, 'Grupo', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2', 'SUSM2%', 'PagoTotal',  'Acelerador' , 'Planilla', 'Bono', 'Campaña', 'Otros']  
-        else:
-            columnas_a_mostrar = ['Departamento', 'Socio', 'Kam', 'Subcanal', columna_DNI, 'Grupo', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2', 'SUSM2%','PagoTotal']  
+        with tab_vista_1:
+            mostrar_columnas_adicionales = st.checkbox("Mostrar adicionales ...")
+            
+            df_descarga = df_recalculado # df_descarga es igual a df recalculado
+
+            if mostrar_columnas_adicionales:
+                columnas_a_mostrar = ['Departamento', 'Socio', 'Kam' ,'Subcanal', columna_DNI, 'Grupo', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2', 'SUSM2%', 'PagoTotal',  'Acelerador' , 'Planilla', 'Bono', 'Campaña', 'Otros']  
+            else:
+                columnas_a_mostrar = ['Departamento', 'Socio', 'Kam', 'Subcanal', columna_DNI, 'Grupo', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2', 'SUSM2%','PagoTotal']  
+                
+
+            if grupos_seleccionados:
+                df_descarga = df_recalculado[df_recalculado['Grupo'].isin(grupos_seleccionados)] # si se aplica este filtro es df recalculado segun el grupo seleccionado
+            else:
+                df_descarga = df_recalculado
+
+
+            if dni_ingresado: 
+                try:
+                    dni_ingresado = str(dni_ingresado)  
+                    df_descarga = df_descarga[df_descarga[columna_DNI] == dni_ingresado]
+
+                    if df_descarga.empty:  
+                        st.warning(f"El {columna_DNI} ingresado no se encuentra en los datos.")
+                    else:
+                        st.dataframe(df_descarga[columnas_a_mostrar], use_container_width=True)
+
+                except ValueError:
+                    st.error(f"Por favor, ingresa un {columna_DNI} con el formao válido.")
+            else:  
+                st.dataframe(df_descarga[columnas_a_mostrar], use_container_width=True )
             
 
-        if grupos_seleccionados:
-            df_descarga = df_recalculado[df_recalculado['Grupo'].isin(grupos_seleccionados)] # si se aplica este filtro es df recalculado segun el grupo seleccionado
-        else:
-            df_descarga = df_recalculado
+            # descarga
+            towrite_detallada = io.BytesIO()
+            with pd.ExcelWriter(towrite_detallada, engine="xlsxwriter") as writer:
+                df_descarga.to_excel(writer, index=False, sheet_name="Tabla Recalculada")
+            towrite_detallada.seek(0)
 
+            st.download_button(
+                label="Descargar tabla detalle",
+                data=towrite_detallada,
+                file_name="dataframe_recalculado.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
 
-        if dni_ingresado: 
-            try:
-                dni_ingresado = str(dni_ingresado)  
-                df_descarga = df_descarga[df_descarga[columna_DNI] == dni_ingresado]
-
-                if df_descarga.empty:  
-                    st.warning(f"El {columna_DNI} ingresado no se encuentra en los datos.")
-                else:
-                    st.dataframe(df_descarga[columnas_a_mostrar], use_container_width=True)
-
-            except ValueError:
-                st.error(f"Por favor, ingresa un {columna_DNI} con el formao válido.")
-        else:  
-            st.dataframe(df_descarga[columnas_a_mostrar], use_container_width=True )
         
+        with tab_vista_2:
+            
+            df_recalculado_dnis_lider = df_recalculado[['DNI LIDER', 'Grupo']]
 
-        # descarga
-        towrite_detallada = io.BytesIO()
-        with pd.ExcelWriter(towrite_detallada, engine="xlsxwriter") as writer:
-            df_descarga.to_excel(writer, index=False, sheet_name="Tabla Recalculada")
-        towrite_detallada.seek(0)
+            df_recalculado_dnis_lider['DNI LIDER'] = df_recalculado['DNI LIDER'].str.strip()
 
-        st.download_button(
-            label="Descargar tabla detalle",
-            data=towrite_detallada,
-            file_name="dataframe_recalculado.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+
+            df_normal['DNI LIDER'] = df_normal['DNI LIDER'].str.strip()
+            df_normal['DNI'] = df_normal['DNI'].str.strip()
+
+
+            df_resultado = df_recalculado_dnis_lider.merge(df_normal, on='DNI LIDER', how='left')
+        
+            st.dataframe(df_resultado[['Grupo', 'DNI LIDER', 'DNI']], use_container_width=True)
+           
+            #if grupos_seleccionados:
+             #   df_recalculado_con_dnis = df_resultado[df_resultado['Grupo'].isin(grupos_seleccionados)]
     
+            #if dni_ingresado:
+               # try:
+                  #  dni_ingresado = str(dni_ingresado)  
+                  #  df_recalculado_con_dnis = df_recalculado_con_dnis[df_recalculado_con_dnis['DNI LIDER'] == dni_ingresado]
+
+                  #  if df_recalculado_con_dnis.empty:
+                   #     st.warning(f"El {columna_DNI} ingresado no se encuentra en los datos.")
+                  #  else:
+                     #   
+                     #   st.dataframe(df_recalculado_con_dnis[['Grupo', 'DNI LIDER', 'DNI']], use_container_width=True)
+
+                #except ValueError:
+                #    st.error(f"Por favor, ingresa un {columna_DNI} con el formato válido.")
+            #else:
+              # 
+               # st.dataframe(df_resultado[['Grupo', 'DNI LIDER', 'DNI']], use_container_width=True)
+
+
+             # descarga
+            towrite_f = io.BytesIO()
+            with pd.ExcelWriter(towrite_f, engine="xlsxwriter") as writer:
+                df_resultado.to_excel(writer, index=False, sheet_name="Tabla Recalculada")
+            towrite_f.seek(0)
+
+            st.download_button(
+                label="Descargar ..",
+                data=towrite_f,
+                file_name="dataframe_recalculado.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
 
 except Exception as e:
     st.write(f"Error al cargar el archivo: {e}")
