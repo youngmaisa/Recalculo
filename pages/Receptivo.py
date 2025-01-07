@@ -31,6 +31,10 @@ meses_orden = [
 ]
 
 
+tab_vista_normal, tab_vista_historica = \
+    st.tabs(['VISTA NORMAL', 'VISTA HISTORICA'])
+
+
 min = 0
 max = 5000
 
@@ -362,220 +366,355 @@ def tabla_resumen_grupos(dataframe):
     return tabla
             
 
-# Filro Meses 
-filtro_mes = st.selectbox("Mes",  meses_disponibles(carpeta_archivos))
-st.markdown("---")
+def normal():
+    # Filro Meses 
+    filtro_mes = st.selectbox("Mes",  meses_disponibles(carpeta_archivos))
+    st.markdown("---")
 
-try:
-    df = dataframe_mes(filtro_mes, carpeta_archivos)
-    df = calcular_grupos_personalizados(dataframe= df,num_grupos= num_grupos, columnas_orden=['URM2%', 'QUrs', 'PP'])
+    try:
+        df = dataframe_mes(filtro_mes, carpeta_archivos)
+        df = calcular_grupos_personalizados(dataframe= df,num_grupos= num_grupos, columnas_orden=['URM2%', 'QUrs', 'PP'])
 
-    ####
-    df_normal = dataframe_mes_normal(filtro_mes, carpeta_archivos)
-    #st.dataframe(df_normal)
+        ####
+        df_normal = dataframe_mes_normal(filtro_mes, carpeta_archivos)
+        #st.dataframe(df_normal)
 
-    df_filtrado = aplicar_filtros(df)
+        df_filtrado = aplicar_filtros(df)
 
-    if not df_filtrado.empty:
-        df_recalculado = calcular_grupos_personalizados(df_filtrado, num_grupos= num_grupos , columnas_orden= ['URM2%', 'QUrs', 'PP'])
-        
-    else:
-        st.warning("No hay datos para los filtros seleccionados.")        
-        df_recalculado = pd.DataFrame(columns=df.columns)
-
-
-  
-
-    if not df_recalculado.empty:
-
-        # Tabla Resumen Inicial  ------------------------------
-        st.markdown("""### :page_facing_up: Resumen Inicial""")
-        st.info("""Puede visualizar un **dataframe segmentado por subcanal**, si deseas el detalle del **PagoTotal**, simplemente haz clic  en **"Mostrar adicionales"**.""")
-        mostrar_columnas_adicionales_pivote = st.checkbox("Mostrar adicionales .")
-
-        tabla_ini = tabla_inicial(df_recalculado)
-        
-        if mostrar_columnas_adicionales_pivote:
-            columnas_a_mostrar_pivot = ['Subcanal', 'QHc', 'PP', 'QUrs','URM2%', 'SS', 'SUSM2', 'PERM2', 'SUSM2%', 'PagoTotal', 'Acelerador', 'Planilla', 'Bono', 'Campaña', 'Otros']
-        else:
-            columnas_a_mostrar_pivot = ['Subcanal', 'QHc', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2','SUSM2%', 'PagoTotal'] 
-            
-        st.dataframe(tabla_ini[columnas_a_mostrar_pivot], use_container_width=True)
-
-
-        # descarga
-        towrite_inicial = io.BytesIO()
-        with pd.ExcelWriter(towrite_inicial, engine="xlsxwriter") as writer:
-            tabla_ini.to_excel(writer, index=False, sheet_name="Tabla Inicial")
-        towrite_inicial.seek(0)
-
-        st.download_button(
-            label="Descargar tabla inicial",
-            data=towrite_inicial,
-            file_name="dataframe_inicial.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        st.markdown("---")
-     
-
-        
-        # Tabla por grupos ------------------------------
-        st.markdown("""### :rocket: Grupos""")
-        st.info("""
-        Puedes visualizar un **dataframe segmentado por grupos calculados**, el cual muestra la **distribución de QHcs** dentro de cada grupo resultante del cálculo. Si deseas visualizar el detalle del **Pago Total**, simplemente haz clic en la opción **"Mostrar adicionales"**.
-        """)
-        mostrar_columnas_adicionales_grupos = st.checkbox("Mostrar adicionales ..")
-
-        tabla_gru = tabla_resumen_grupos(df_recalculado)
-
-        if mostrar_columnas_adicionales_grupos:
-            columnas_a_mostrar_tabla_grupos = ['Grupo', 'RangoGrupo','QHc', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2', 'SUSM2%', 'PagoTotal',  'Acelerador' , 'Planilla', 'Bono', 'Campaña', 'Otros']  
+        if not df_filtrado.empty:
+            df_recalculado = calcular_grupos_personalizados(df_filtrado, num_grupos= num_grupos , columnas_orden= ['URM2%', 'QUrs', 'PP'])
             
         else:
-            columnas_a_mostrar_tabla_grupos = ['Grupo', 'RangoGrupo', 'QHc', 'PP', 'QUrs', 'URM2%',  'SS', 'SUSM2', 'PERM2', 'SUSM2%','PagoTotal']  
+            st.warning("No hay datos para los filtros seleccionados.")        
+            df_recalculado = pd.DataFrame(columns=df.columns)
+
+
+    
+
+        if not df_recalculado.empty:
+
+            # Tabla Resumen Inicial  ------------------------------
+            st.markdown("""### :page_facing_up: Resumen Inicial""")
+            st.info("""Puede visualizar un **dataframe segmentado por subcanal**, si deseas el detalle del **PagoTotal**, simplemente haz clic  en **"Mostrar adicionales"**.""")
+            mostrar_columnas_adicionales_pivote = st.checkbox("Mostrar adicionales .")
+
+            tabla_ini = tabla_inicial(df_recalculado)
             
-        st.dataframe(tabla_gru[columnas_a_mostrar_tabla_grupos], use_container_width=True)
-
-        # descarga
-        towrite_resumen = io.BytesIO()
-        with pd.ExcelWriter(towrite_resumen, engine="xlsxwriter") as writer:
-            tabla_gru.to_excel(writer, index=False, sheet_name="Tabla Grupos")
-        towrite_resumen.seek(0)
-
-        st.download_button(
-            label="Descargar grupos",
-            data=towrite_resumen,
-            file_name="dataframe_grupos.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        st.markdown("---")
-
-
-        # Tabla Detalle DNI  --------------------------------------------------------------------
-        st.markdown(f"""### :mag: Tabla detalle {columna_DNI}""")
-        st.info("""Puedes visualizar un **dataframe detallado** con los grupos calculados, mostrando los **DNIs asociados a cada grupo**.  Si deseas observar el detalle del **Pago Total**, simplemente haz clic en la opción **"Mostrar adicionales"**.""")
-
-        
-        df_recalculado_inc = df_recalculado[['Departamento', 'Socio', 'Kam', 'Subcanal', columna_DNI, 'Grupo', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2','SUSM2%', 'PagoTotal',  'Acelerador' , 'Planilla', 'Bono', 'Campaña', 'Otros' ]] 
-
-
-        filtro1, filtro2 = st.columns([2,2])
-        with filtro1:
-            grupos_disponibles = df_recalculado_inc['Grupo'].unique()
-            grupos_seleccionados = st.multiselect(
-                "Selecciona uno o varios grupos",
-                options= grupos_disponibles,  
-                default= []  
-            )
-        with filtro2:
-            dni_ingresado = st.text_input(f"Ingresa un {columna_DNI}:")
-
-        # VISTAS 
-        tab_vista_1, tab_vista_2= \
-            st.tabs(['VISTA 1', 'VISTA 2'])
-
-
-        with tab_vista_1:
-            mostrar_columnas_adicionales = st.checkbox("Mostrar adicionales ...")
-            
-
-            df_descarga = df_recalculado_inc # df_descarga es igual a df recalculado
-
-
-            if mostrar_columnas_adicionales:
-                columnas_a_mostrar = ['Departamento', 'Socio', 'Kam' ,'Subcanal', columna_DNI, 'Grupo', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2', 'SUSM2%', 'PagoTotal',  'Acelerador' , 'Planilla', 'Bono', 'Campaña', 'Otros']  
+            if mostrar_columnas_adicionales_pivote:
+                columnas_a_mostrar_pivot = ['Subcanal', 'QHc', 'PP', 'QUrs','URM2%', 'SS', 'SUSM2', 'PERM2', 'SUSM2%', 'PagoTotal', 'Acelerador', 'Planilla', 'Bono', 'Campaña', 'Otros']
             else:
-                columnas_a_mostrar = ['Departamento', 'Socio', 'Kam', 'Subcanal', columna_DNI, 'Grupo', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2', 'SUSM2%','PagoTotal']  
+                columnas_a_mostrar_pivot = ['Subcanal', 'QHc', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2','SUSM2%', 'PagoTotal'] 
                 
+            st.dataframe(tabla_ini[columnas_a_mostrar_pivot], use_container_width=True)
 
-            if grupos_seleccionados:
-                df_descarga = df_recalculado_inc[df_recalculado_inc['Grupo'].isin(grupos_seleccionados)] # si se aplica este filtro es df recalculado segun el grupo seleccionado
-            else:
-                df_descarga = df_recalculado_inc
-
-
-            if dni_ingresado: 
-                try:
-                    dni_ingresado = str(dni_ingresado)  
-                    df_descarga = df_descarga[df_descarga[columna_DNI] == dni_ingresado]
-
-                    if df_descarga.empty:  
-                        st.warning(f"El {columna_DNI} ingresado no se encuentra en los datos.")
-                    else:
-                        st.dataframe(df_descarga[columnas_a_mostrar], use_container_width=True)
-
-                except ValueError:
-                    st.error(f"Por favor, ingresa un {columna_DNI} con el formao válido.")
-            else:  
-                st.dataframe(df_descarga[columnas_a_mostrar], use_container_width=True )
-            
 
             # descarga
-            towrite_detallada = io.BytesIO()
-            with pd.ExcelWriter(towrite_detallada, engine="xlsxwriter") as writer:
-                df_descarga.to_excel(writer, index=False, sheet_name="Tabla Detalle DNI")
-            towrite_detallada.seek(0)
+            towrite_inicial = io.BytesIO()
+            with pd.ExcelWriter(towrite_inicial, engine="xlsxwriter") as writer:
+                tabla_ini.to_excel(writer, index=False, sheet_name="Tabla Inicial")
+            towrite_inicial.seek(0)
 
             st.download_button(
-                label="Descargar tabla vista 1",
-                data=towrite_detallada,
-                file_name="dataframe_detalle_dni_vista1.xlsx",
+                label="Descargar tabla inicial",
+                data=towrite_inicial,
+                file_name="dataframe_inicial.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
-
+            st.markdown("---")
         
-        with tab_vista_2:
+
             
-            df_recalculado_dnis_lider = df_recalculado[['DNI LIDER', 'Grupo']]
-            df_recalculado_dnis_lider['DNI LIDER'] = df_recalculado['DNI LIDER'].str.strip()
+            # Tabla por grupos ------------------------------
+            st.markdown("""### :rocket: Grupos""")
+            st.info("""
+            Puedes visualizar un **dataframe segmentado por grupos calculados**, el cual muestra la **distribución de QHcs** dentro de cada grupo resultante del cálculo. Si deseas visualizar el detalle del **Pago Total**, simplemente haz clic en la opción **"Mostrar adicionales"**.
+            """)
+            mostrar_columnas_adicionales_grupos = st.checkbox("Mostrar adicionales ..")
 
+            tabla_gru = tabla_resumen_grupos(df_recalculado)
 
-            df_normal['DNI LIDER'] = df_normal['DNI LIDER'].str.strip()
-            df_normal['DNI'] = df_normal['DNI'].str.strip()
-
-
-            df_resultado = df_recalculado_dnis_lider.merge(df_normal, on='DNI LIDER', how='left')
-            
-            df_descarga2 = df_resultado
-
-            if grupos_seleccionados:
-             
-                df_descarga2 = df_resultado[df_resultado['Grupo'].isin(grupos_seleccionados)]
+            if mostrar_columnas_adicionales_grupos:
+                columnas_a_mostrar_tabla_grupos = ['Grupo', 'RangoGrupo','QHc', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2', 'SUSM2%', 'PagoTotal',  'Acelerador' , 'Planilla', 'Bono', 'Campaña', 'Otros']  
+                
             else:
-                df_descarga2 = df_resultado
-            
-            if dni_ingresado:
-                try:
-                    dni_ingresado = str(dni_ingresado)  
-                    df_descarga2 = df_descarga2[df_descarga2['DNI LIDER'] == dni_ingresado]
+                columnas_a_mostrar_tabla_grupos = ['Grupo', 'RangoGrupo', 'QHc', 'PP', 'QUrs', 'URM2%',  'SS', 'SUSM2', 'PERM2', 'SUSM2%','PagoTotal']  
+                
+            st.dataframe(tabla_gru[columnas_a_mostrar_tabla_grupos], use_container_width=True)
 
-                    if df_descarga2.empty:
-                        st.warning(f"El {columna_DNI} ingresado no se encuentra en los datos.")
-                    else:
-                        st.dataframe(df_descarga2[['Grupo', 'DNI LIDER', 'DNI']], use_container_width=True)
-
-                except ValueError:
-                   st.error(f"Por favor, ingresa un {columna_DNI} con el formato válido.")
-            else:
-                st.dataframe(df_descarga2[['Grupo', 'DNI LIDER', 'DNI']], use_container_width=True)
-
-
-             # descarga
-            towrite_f = io.BytesIO()
-            with pd.ExcelWriter(towrite_f, engine="xlsxwriter") as writer:
-                df_descarga2.to_excel(writer, index=False, sheet_name="Tabla Detalle DNI")
-            towrite_f.seek(0)
+            # descarga
+            towrite_resumen = io.BytesIO()
+            with pd.ExcelWriter(towrite_resumen, engine="xlsxwriter") as writer:
+                tabla_gru.to_excel(writer, index=False, sheet_name="Tabla Grupos")
+            towrite_resumen.seek(0)
 
             st.download_button(
-                label="Descargar tabla vista 2",
-                data=towrite_f,
-                file_name="dataframe_detalle_dni_vista2.xlsx",
+                label="Descargar grupos",
+                data=towrite_resumen,
+                file_name="dataframe_grupos.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
+            st.markdown("---")
 
 
-except Exception as e:
-    st.write(f"Error al cargar el archivo: {e}")
-    st.write("Detalles de la excepción:")
-    st.text(traceback.format_exc())  
+            # Tabla Detalle DNI  --------------------------------------------------------------------
+            st.markdown(f"""### :mag: Tabla detalle {columna_DNI}""")
+            st.info("""Puedes visualizar un **dataframe detallado** con los grupos calculados, mostrando los **DNIs asociados a cada grupo**.  Si deseas observar el detalle del **Pago Total**, simplemente haz clic en la opción **"Mostrar adicionales"**.""")
 
+            
+            df_recalculado_inc = df_recalculado[['Departamento', 'Socio', 'Kam', 'Subcanal', columna_DNI, 'Grupo', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2','SUSM2%', 'PagoTotal',  'Acelerador' , 'Planilla', 'Bono', 'Campaña', 'Otros' ]] 
+
+
+            filtro1, filtro2 = st.columns([2,2])
+            with filtro1:
+                grupos_disponibles = df_recalculado_inc['Grupo'].unique()
+                grupos_seleccionados = st.multiselect(
+                    "Selecciona uno o varios grupos",
+                    options= grupos_disponibles,  
+                    default= []  
+                )
+            with filtro2:
+                dni_ingresado = st.text_input(f"Ingresa un {columna_DNI}:")
+
+            # VISTAS 
+            tab_vista_1, tab_vista_2= \
+                st.tabs(['VISTA 1', 'VISTA 2'])
+
+
+            with tab_vista_1:
+                mostrar_columnas_adicionales = st.checkbox("Mostrar adicionales ...")
+                
+
+                df_descarga = df_recalculado_inc # df_descarga es igual a df recalculado
+
+
+                if mostrar_columnas_adicionales:
+                    columnas_a_mostrar = ['Departamento', 'Socio', 'Kam' ,'Subcanal', columna_DNI, 'Grupo', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2', 'SUSM2%', 'PagoTotal',  'Acelerador' , 'Planilla', 'Bono', 'Campaña', 'Otros']  
+                else:
+                    columnas_a_mostrar = ['Departamento', 'Socio', 'Kam', 'Subcanal', columna_DNI, 'Grupo', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2', 'SUSM2%','PagoTotal']  
+                    
+
+                if grupos_seleccionados:
+                    df_descarga = df_recalculado_inc[df_recalculado_inc['Grupo'].isin(grupos_seleccionados)] # si se aplica este filtro es df recalculado segun el grupo seleccionado
+                else:
+                    df_descarga = df_recalculado_inc
+
+
+                if dni_ingresado: 
+                    try:
+                        dni_ingresado = str(dni_ingresado)  
+                        df_descarga = df_descarga[df_descarga[columna_DNI] == dni_ingresado]
+
+                        if df_descarga.empty:  
+                            st.warning(f"El {columna_DNI} ingresado no se encuentra en los datos.")
+                        else:
+                            st.dataframe(df_descarga[columnas_a_mostrar], use_container_width=True)
+
+                    except ValueError:
+                        st.error(f"Por favor, ingresa un {columna_DNI} con el formao válido.")
+                else:  
+                    st.dataframe(df_descarga[columnas_a_mostrar], use_container_width=True )
+                
+
+                # descarga
+                towrite_detallada = io.BytesIO()
+                with pd.ExcelWriter(towrite_detallada, engine="xlsxwriter") as writer:
+                    df_descarga.to_excel(writer, index=False, sheet_name="Tabla Detalle DNI")
+                towrite_detallada.seek(0)
+
+                st.download_button(
+                    label="Descargar tabla vista 1",
+                    data=towrite_detallada,
+                    file_name="dataframe_detalle_dni_vista1.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+
+            
+            with tab_vista_2:
+                
+                df_recalculado_dnis_lider = df_recalculado[['DNI LIDER', 'Grupo']]
+                df_recalculado_dnis_lider['DNI LIDER'] = df_recalculado['DNI LIDER'].str.strip()
+
+
+                df_normal['DNI LIDER'] = df_normal['DNI LIDER'].str.strip()
+                df_normal['DNI'] = df_normal['DNI'].str.strip()
+
+
+                df_resultado = df_recalculado_dnis_lider.merge(df_normal, on='DNI LIDER', how='left')
+                
+                df_descarga2 = df_resultado
+
+                if grupos_seleccionados:
+                
+                    df_descarga2 = df_resultado[df_resultado['Grupo'].isin(grupos_seleccionados)]
+                else:
+                    df_descarga2 = df_resultado
+                
+                if dni_ingresado:
+                    try:
+                        dni_ingresado = str(dni_ingresado)  
+                        df_descarga2 = df_descarga2[df_descarga2['DNI LIDER'] == dni_ingresado]
+
+                        if df_descarga2.empty:
+                            st.warning(f"El {columna_DNI} ingresado no se encuentra en los datos.")
+                        else:
+                            st.dataframe(df_descarga2[['Grupo', 'DNI LIDER', 'DNI']], use_container_width=True)
+
+                    except ValueError:
+                        st.error(f"Por favor, ingresa un {columna_DNI} con el formato válido.")
+                else:
+                    st.dataframe(df_descarga2[['Grupo', 'DNI LIDER', 'DNI']], use_container_width=True)
+
+
+                # descarga
+                towrite_f = io.BytesIO()
+                with pd.ExcelWriter(towrite_f, engine="xlsxwriter") as writer:
+                    df_descarga2.to_excel(writer, index=False, sheet_name="Tabla Detalle DNI")
+                towrite_f.seek(0)
+
+                st.download_button(
+                    label="Descargar tabla vista 2",
+                    data=towrite_f,
+                    file_name="dataframe_detalle_dni_vista2.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+
+
+    except Exception as e:
+        st.write(f"Error al cargar el archivo: {e}")
+        st.write("Detalles de la excepción:")
+        st.text(traceback.format_exc())  
+
+
+
+
+def asignar_bandera_promedio(row, meses_validos, num_grupos):
+    grupos_mes = [row[mes] for mes in meses_validos if row[mes] != 0]
+    
+    if not grupos_mes:
+        return "⚪", "Neutro"
+    
+    promedio = sum(grupos_mes) / len(grupos_mes)
+    umbral_bajo = num_grupos * 0.5
+    umbral_alto = num_grupos * 0.6
+    
+    if promedio <= umbral_bajo:
+        #tendencia = "Flecha arriba" if grupos_mes[-1] < grupos_mes[0] else "Flecha abajo"
+        #simbolo = "✅🔼" if tendencia == "Flecha arriba" else "✅🔽"
+        simbolo = "✅"
+        return simbolo, "Bueno"
+    elif promedio >= umbral_alto:
+        #tendencia = "Flecha arriba" if grupos_mes[-1] < grupos_mes[0] else "Flecha abajo"
+        #simbolo = "❌🔼" if tendencia == "Flecha arriba" else "❌🔽"
+        simbolo = "❌"
+        return simbolo, "Malo"
+    else:
+        return "⚪", "Neutro"
+    
+
+
+def historico_optimizado(carpeta_archivos=carpeta_archivos):
+
+    st.markdown("""### :bar_chart: Tabla resumen""")
+    desempeños = ["Bueno", "Malo", "Neutro"]
+    filtro1, filtro2 = st.columns([2, 2])
+    with filtro1:
+        dni_ingresado = st.text_input(f"Ingresa un {columna_DNI} para buscar su progreso:")
+    with filtro2:
+        desempeño_ingresado = st.multiselect(
+            "Selecciona el desempeño",
+            options=desempeños,
+           default=[]
+        )
+
+    @st.cache_data
+    def cargar_datos(carpeta_archivos):
+        archivos = os.listdir(carpeta_archivos) 
+        archivos = [os.path.join(carpeta_archivos, archivo) for archivo in archivos]
+        meses = meses_disponibles(carpeta_archivos)
+        resultados = []
+        for archivo, mes in zip(archivos, meses):
+            df = pd.read_excel(archivo, dtype={columna_DNI: str})
+            df = dataframe_mes(mes, carpeta_archivos)
+            df['Mes'] = mes
+            df = calcular_grupos_personalizados(
+                df,
+                num_grupos=num_grupos,
+                columnas_orden=["URM2%", "QUrs", "PP"]
+                )
+            resultados.append(df)
+        return pd.concat(resultados, ignore_index=True), meses
+
+   
+
+    df_total, meses = cargar_datos(carpeta_archivos)
+
+
+    df_filtrado = aplicar_filtros(df_total)
+
+
+    if not df_filtrado.empty:
+        todos_dnis = pd.DataFrame(df_filtrado[columna_DNI].unique(), columns=[columna_DNI]).sort_values(by=columna_DNI).reset_index(drop=True)
+        df_completo = todos_dnis.copy()
+
+        meses_validos = [mes for mes in meses if not df_filtrado[df_filtrado['Mes'] == mes]['Grupo'].isnull().all()]
+        
+        for mes in meses_validos:
+            df_mes = df_filtrado[df_filtrado['Mes'] == mes][[columna_DNI, 'Grupo']]
+            df_mes_completo = todos_dnis.merge(df_mes, on=columna_DNI, how='left').rename(columns={'Grupo': mes})
+            df_completo = df_completo.merge(df_mes_completo[[columna_DNI, mes]], on=columna_DNI, how='left').fillna(0)
+
+        #df_completo['Evolución'] = df_completo.apply(
+         #   lambda row: [row[mes] for mes in meses_validos],
+         #   axis=1
+        #)
+
+        df_completo[['Bandera', 'Desempeño']] = df_completo.apply(
+           lambda row: pd.Series(asignar_bandera_promedio(row, meses_validos, num_grupos)),
+            axis=1
+        )
+
+      
+        if dni_ingresado:
+            df_seleccionado = df_completo[df_completo[columna_DNI] == dni_ingresado]
+            if df_seleccionado.empty:
+                st.warning(f"El {columna_DNI} ingresado no se encuentra en los datos.")
+        else:
+            if not desempeño_ingresado:
+                df_seleccionado = df_completo
+            else:
+                df_seleccionado = df_completo[df_completo['Desempeño'].isin(desempeño_ingresado)]
+
+        #st.dataframe(
+         #   df_seleccionado,
+         #  column_config={
+          #      "Evolución": st.column_config.BarChartColumn(
+           #         "Evolución de grupos",
+           #         y_min=0,
+          #          y_max=num_grupos
+           #     )
+        #    },
+          #  use_container_width=True
+        #)
+
+        st.dataframe(df_seleccionado, use_container_width=True)
+
+
+      
+        towrite_seleccionado = io.BytesIO()
+        df_seleccionado.to_csv(towrite_seleccionado, index=False, encoding='utf-8')
+        towrite_seleccionado.seek(0)
+
+        st.download_button(
+            label="Descargar",
+            data=towrite_seleccionado,
+            file_name="dataframe_historico.csv",
+            mime="text/csv"
+        )
+    else:
+        st.warning("No hay datos para los filtros seleccionados.")
+
+
+with tab_vista_normal:
+    normal()
+with tab_vista_historica:
+    historico_optimizado()
