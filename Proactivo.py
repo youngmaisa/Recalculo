@@ -341,7 +341,7 @@ def normal():
 
         if not df_filtrado.empty:
             df_recalculado = calcular_grupos_personalizados(df_filtrado, num_grupos= num_grupos , columnas_orden= ['URM2%', 'QUrs', 'PP'])
-            
+           
         else:
             st.warning("No hay datos para los filtros seleccionados.")        
             df_recalculado = pd.DataFrame(columns=df.columns)
@@ -415,9 +415,13 @@ def normal():
             st.markdown(f"""### :mag: Tabla detalle {columna_DNI}""")
             st.info("""Puedes visualizar un **dataframe detallado** con los grupos calculados, mostrando los **DNIs asociados a cada grupo**.  Si deseas observar el detalle del **Pago Total**, simplemente haz clic en la opción **"Mostrar adicionales"**.""")
 
+
+            df_recalculado_inc = df_recalculado[['Departamento', 'Socio', 'Kam', 'Subcanal', columna_DNI, 'Grupo', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2','SUSM2%', 'PagoTotal',  'Acelerador' , 'Planilla', 'Bono', 'Campaña', 'Otros' ]] 
+
+
             filtro1, filtro2 = st.columns([2,2])
             with filtro1:
-                grupos_disponibles = df_recalculado['Grupo'].unique()
+                grupos_disponibles = df_recalculado_inc['Grupo'].unique()
                 grupos_seleccionados = st.multiselect(
                     "Selecciona uno o varios grupos",
                     options= grupos_disponibles,  
@@ -428,7 +432,9 @@ def normal():
 
             mostrar_columnas_adicionales = st.checkbox("Mostrar adicionales ...")
             
-            df_descarga = df_recalculado # df_descarga es igual a df recalculado
+            
+            df_descarga = df_recalculado_inc
+
 
             if mostrar_columnas_adicionales:
                 columnas_a_mostrar = ['Departamento', 'Socio', 'Kam' ,'Subcanal', columna_DNI, 'Grupo', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2', 'SUSM2%', 'PagoTotal',  'Acelerador' , 'Planilla', 'Bono', 'Campaña', 'Otros']  
@@ -437,9 +443,9 @@ def normal():
                 
 
             if grupos_seleccionados:
-                df_descarga = df_recalculado[df_recalculado['Grupo'].isin(grupos_seleccionados)] # si se aplica este filtro es df recalculado segun el grupo seleccionado
+                df_descarga = df_recalculado_inc[df_recalculado['Grupo'].isin(grupos_seleccionados)] # si se aplica este filtro es df recalculado segun el grupo seleccionado
             else:
-                df_descarga = df_recalculado
+                df_descarga = df_recalculado_inc
 
 
             if dni_ingresado: 

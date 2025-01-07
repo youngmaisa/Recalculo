@@ -455,9 +455,13 @@ try:
         st.markdown(f"""### :mag: Tabla detalle {columna_DNI}""")
         st.info("""Puedes visualizar un **dataframe detallado** con los grupos calculados, mostrando los **DNIs asociados a cada grupo**.  Si deseas observar el detalle del **Pago Total**, simplemente haz clic en la opción **"Mostrar adicionales"**.""")
 
+        
+        df_recalculado_inc = df_recalculado[['Departamento', 'Socio', 'Kam', 'Subcanal', columna_DNI, 'Grupo', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2','SUSM2%', 'PagoTotal',  'Acelerador' , 'Planilla', 'Bono', 'Campaña', 'Otros' ]] 
+
+
         filtro1, filtro2 = st.columns([2,2])
         with filtro1:
-            grupos_disponibles = df_recalculado['Grupo'].unique()
+            grupos_disponibles = df_recalculado_inc['Grupo'].unique()
             grupos_seleccionados = st.multiselect(
                 "Selecciona uno o varios grupos",
                 options= grupos_disponibles,  
@@ -474,7 +478,9 @@ try:
         with tab_vista_1:
             mostrar_columnas_adicionales = st.checkbox("Mostrar adicionales ...")
             
-            df_descarga = df_recalculado # df_descarga es igual a df recalculado
+
+            df_descarga = df_recalculado_inc # df_descarga es igual a df recalculado
+
 
             if mostrar_columnas_adicionales:
                 columnas_a_mostrar = ['Departamento', 'Socio', 'Kam' ,'Subcanal', columna_DNI, 'Grupo', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2', 'SUSM2%', 'PagoTotal',  'Acelerador' , 'Planilla', 'Bono', 'Campaña', 'Otros']  
@@ -483,9 +489,9 @@ try:
                 
 
             if grupos_seleccionados:
-                df_descarga = df_recalculado[df_recalculado['Grupo'].isin(grupos_seleccionados)] # si se aplica este filtro es df recalculado segun el grupo seleccionado
+                df_descarga = df_recalculado_inc[df_recalculado_inc['Grupo'].isin(grupos_seleccionados)] # si se aplica este filtro es df recalculado segun el grupo seleccionado
             else:
-                df_descarga = df_recalculado
+                df_descarga = df_recalculado_inc
 
 
             if dni_ingresado: 
@@ -532,10 +538,8 @@ try:
             
             df_descarga2 = df_resultado
 
-            #st.dataframe(df_resultado[['Grupo', 'DNI LIDER', 'DNI']], use_container_width=True)
-           
             if grupos_seleccionados:
-             #   df_recalculado_con_dnis = df_resultado[df_resultado['Grupo'].isin(grupos_seleccionados)]
+             
                 df_descarga2 = df_resultado[df_resultado['Grupo'].isin(grupos_seleccionados)]
             else:
                 df_descarga2 = df_resultado
