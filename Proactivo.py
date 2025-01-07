@@ -7,7 +7,12 @@ import io
 import traceback
 
 #st.title("Herramienta de Recálculo")
-st.set_page_config(layout="wide")
+st.set_page_config(
+    layout="wide",
+    page_title="Recálculo Entel",
+    page_icon="entel.jpg"
+)
+
 
 st.markdown("""## Herramienta de Recálculo""")
 
