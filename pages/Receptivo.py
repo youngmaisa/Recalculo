@@ -6,7 +6,12 @@ from PIL import Image
 import io
 import traceback
 
-st.set_page_config(layout="wide")
+st.set_page_config(
+    layout="wide",
+    page_title="Recálculo Entel",
+    page_icon="entel.jpg"
+)
+
 st.markdown("""## Herramienta de Recálculo""")
 
 carpeta_archivos  = 'data/RECEPTIVO'
