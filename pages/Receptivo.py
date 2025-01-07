@@ -401,7 +401,22 @@ try:
             columnas_a_mostrar_pivot = ['Subcanal', 'QHc', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2','SUSM2%', 'PagoTotal'] 
             
         st.dataframe(tabla_ini[columnas_a_mostrar_pivot], use_container_width=True)
+
+
+        # descarga
+        towrite_inicial = io.BytesIO()
+        with pd.ExcelWriter(towrite_inicial, engine="xlsxwriter") as writer:
+            tabla_ini.to_excel(writer, index=False, sheet_name="Tabla Inicial")
+        towrite_inicial.seek(0)
+
+        st.download_button(
+            label="Descargar tabla inicial",
+            data=towrite_inicial,
+            file_name="dataframe_inicial.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
         st.markdown("---")
+     
 
         
         # Tabla por grupos ------------------------------
@@ -424,7 +439,7 @@ try:
         # descarga
         towrite_resumen = io.BytesIO()
         with pd.ExcelWriter(towrite_resumen, engine="xlsxwriter") as writer:
-            tabla_gru.to_excel(writer, index=False, sheet_name="Tabla Recalculada")
+            tabla_gru.to_excel(writer, index=False, sheet_name="Tabla Grupos")
         towrite_resumen.seek(0)
 
         st.download_button(
@@ -492,13 +507,13 @@ try:
             # descarga
             towrite_detallada = io.BytesIO()
             with pd.ExcelWriter(towrite_detallada, engine="xlsxwriter") as writer:
-                df_descarga.to_excel(writer, index=False, sheet_name="Tabla Recalculada")
+                df_descarga.to_excel(writer, index=False, sheet_name="Tabla Detalle DNI")
             towrite_detallada.seek(0)
 
             st.download_button(
                 label="Descargar tabla vista 1",
                 data=towrite_detallada,
-                file_name="dataframe_recalculado.xlsx",
+                file_name="dataframe_detalle_dni_vista1.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
@@ -544,13 +559,13 @@ try:
              # descarga
             towrite_f = io.BytesIO()
             with pd.ExcelWriter(towrite_f, engine="xlsxwriter") as writer:
-                df_descarga2.to_excel(writer, index=False, sheet_name="Tabla Recalculada")
+                df_descarga2.to_excel(writer, index=False, sheet_name="Tabla Detalle DNI")
             towrite_f.seek(0)
 
             st.download_button(
                 label="Descargar tabla vista 2",
                 data=towrite_f,
-                file_name="dataframe_recalculado.xlsx",
+                file_name="dataframe_detalle_dni_vista2.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
