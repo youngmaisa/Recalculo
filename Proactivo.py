@@ -192,99 +192,109 @@ if st.sidebar.button("Restablecer filtros", use_container_width=True):
 
 with st.sidebar:
     
-    num_grupos = st.number_input(
-        "Número de grupos", 
-        min_value=2, 
-        max_value=50, 
-        value=st.session_state.get("num_grupos", default_num_grupos),
-        key="num_grupos"
-    )
+    #st.button("Restablecer filtros", on_click=reset_filters() , use_container_width=True)
+    with st.expander("Filtros", expanded=True):
+        num_grupos = st.number_input(
+            "Número de grupos", 
+            min_value=2, 
+            max_value=50, 
+            value= default_num_grupos,
+            key="num_grupos"
+        )
 
-    filtro_subcanal = st.multiselect(
-        "Subcanal",
-        options= subcanales,  # Ejemplo de opciones
-        default=st.session_state.get("filtro_subcanal", default_filtro_subcanal),
-        key="filtro_subcanal"
-    )
+        filtro_subcanal = st.multiselect(
+            "Subcanal",
+            options= subcanales,  
+            default= default_filtro_subcanal,
+            key="filtro_subcanal"
+        )
 
-    filtro_departamento = st.multiselect(
-        "Departamento",
-        options= departamentos,  # Ejemplo de opciones
-        default=st.session_state.get("filtro_departamento", default_filtro_departamento),
-        key="filtro_departamento"
-    )
+        filtro_departamento = st.multiselect(
+            "Departamento",
+            options= departamentos,  
+            default=default_filtro_departamento,
+            key="filtro_departamento"
+        )
 
-    filtro_kam = st.multiselect(
-        "Kam",
-        options=kams,  # Ejemplo de opciones
-        default=st.session_state.get("filtro_kam", default_filtro_kam),
-        key="filtro_kam"
-    )
+        filtro_kam = st.multiselect(
+            "Kam",
+            options=kams,  
+            default= default_filtro_kam,
+            key="filtro_kam"
+        )
 
-    filtro_socio = st.multiselect(
-        "Socio",
-        options= socios,  # Ejemplo de opciones
-        default=st.session_state.get("filtro_socio", default_filtro_socio),
-        key="filtro_socio"
-    )
+        filtro_socio = st.multiselect(
+            "Socio",
+            options= socios,  
+            default=default_filtro_socio,
+            key="filtro_socio"
+        )
 
-    min_val, max_val = min, max
-    min_input = st.number_input(
-        "Ingrese el valor mínimo de ventas:",
-        min_value=int(default_min_val),
-        max_value=int(default_max_val),
-        value=st.session_state.get("min_input", default_min_val),
-        step=1,
-        key="min_input"
-    )
-    max_input = st.number_input(
-        "Ingrese el valor máximo de ventas:",
-        min_value=int(default_min_val),
-        max_value=int(default_max_val),
-        value=st.session_state.get("max_input", default_max_val),
-        step=1,
-        key="max_input"
-    )
-    if min_input > max_input:
-        st.error("El valor mínimo de ventas no puede ser mayor que el valor máximo.")
+        min_val, max_val = min, max
 
-     
-    min_urm2, max_urm2 = 0, 100
-    min_input_urm2 = st.number_input(
-        "Ingrese el valor mínimo de URM2%:",
-        min_value=int(default_min_urm2),
-        max_value=int(default_max_urm2),
-        value=st.session_state.get("min_input_urm2", default_min_urm2),
-        step=1,
-        key="min_input_urm2"
-    )
-    max_input_urm2 = st.number_input(
-        "Ingrese el valor máximo de URM2%:",
-        min_value=int(default_min_urm2),
-        max_value=int(default_max_urm2),
-        value=st.session_state.get("max_input_urm2", default_max_urm2),
-        step=1,
-        key="max_input_urm2"
-    )
-    if min_urm2 > max_urm2:
-        st.error("El valor mínimo de URM2% no puede ser mayor que el valor máximo.")
+        col1_min_input , col2_min_input = st.columns([2,2])
+        with col1_min_input:
+            min_input = st.number_input(
+                "Mínimo de ventas:",
+                min_value=int(default_min_val),
+                max_value=int(default_max_val),
+                value=default_min_val,
+                step=1,
+                key="min_input"
+            )
+        with col2_min_input:
+            max_input = st.number_input(
+                "Máximo de ventas:",
+                min_value=int(default_min_val),
+                max_value=int(default_max_val),
+                value= default_max_val,
+                step=1,
+                key="max_input"
+            )
+        if min_input > max_input:
+            st.error("El valor mínimo de ventas no puede ser mayor que el valor máximo.")
 
-   
+        
+        min_urm2, max_urm2 = 0, 100
+        col1_min_urm2, col2_min_urm2 = st.columns([2,2])
+        with col1_min_urm2:
+            min_input_urm2 = st.number_input(
+                "Mínimo de URM2%:",
+                min_value=int(default_min_urm2),
+                max_value=int(default_max_urm2),
+                value=default_min_urm2,
+                step=1,
+                key="min_input_urm2"
+            )
+        with col2_min_urm2:
+            max_input_urm2 = st.number_input(
+                "Máximo de URM2%:",
+                min_value=int(default_min_urm2),
+                max_value=int(default_max_urm2),
+                value=default_max_urm2,
+                step=1,
+                key="max_input_urm2"
+            )
+        if min_urm2 > max_urm2:
+            st.error("El valor mínimo de URM2% no puede ser mayor que el valor máximo.")
+
+
+
 
 def aplicar_filtros(df):
-        if filtro_subcanal:
-            df = df[df['Subcanal'].isin(filtro_subcanal)]
-        if pd.notnull(min_input) and pd.notnull(max_input):
-            df = df[(df["PP"] >= min_input) & (df["PP"] <= max_input)]
-        if filtro_departamento:
-            df = df[df['Departamento'].isin(filtro_departamento)]
-        if filtro_kam:
-            df = df[df['Kam'].isin(filtro_kam)]
-        if filtro_socio:
-            df = df[df['Socio'].isin(filtro_socio)]
-        if pd.notnull(min_input_urm2) and pd.notnull(max_input_urm2):
-            df = df[(df["URM2%"] >= min_input_urm2) & (df["URM2%"] <= max_input_urm2)]
-        return df
+    if filtro_subcanal:
+        df = df[df['Subcanal'].isin(filtro_subcanal)]
+    if pd.notnull(min_input) and pd.notnull(max_input):
+        df = df[(df["PP"] >= min_input) & (df["PP"] <= max_input)]
+    if filtro_departamento:
+        df = df[df['Departamento'].isin(filtro_departamento)]
+    if filtro_kam:
+        df = df[df['Kam'].isin(filtro_kam)]
+    if filtro_socio:
+        df = df[df['Socio'].isin(filtro_socio)]
+    if pd.notnull(min_input_urm2) and pd.notnull(max_input_urm2):
+        df = df[(df["URM2%"] >= min_input_urm2) & (df["URM2%"] <= max_input_urm2)]
+    return df
 
 
 def tabla_inicial(df):
@@ -373,13 +383,15 @@ def tabla_resumen_grupos(dataframe):
 
 #def normal(carpeta_archivos=carpeta_canal):
 
-   
+
 
 def normal():
-    # Filro Meses 
-    meses =  meses_disponibles(carpeta_archivos)
-    filtro_mes = st.selectbox("Mes", meses , index=len(meses)-1)
-    st.markdown("---")
+
+    container = st.container(border=True)
+    with container:
+        # Filro Meses 
+        meses =  meses_disponibles(carpeta_archivos)
+        filtro_mes = st.selectbox( "Mes", meses , index=len(meses)-1)
 
     try:
         df = dataframe_mes(filtro_mes, carpeta_archivos)
@@ -401,12 +413,14 @@ def normal():
             # Tabla Resumen Inicial  ------------------------------
             st.markdown("""### :page_facing_up: Resumen Inicial""")
             st.info("""Puede visualizar un **dataframe segmentado por subcanal**, si deseas el detalle del **PagoTotal**, simplemente haz clic  en **"Mostrar adicionales"**.""")
-            mostrar_columnas_adicionales_pivote = st.checkbox("Mostrar adicionales .")
+            #mostrar_columnas_adicionales_pivote = st.checkbox("Mostrar adicionales .")
+            mostrar_columnas_adicionales_pivote = st.toggle("Mostrar adicionales .")
+
 
             tabla_ini = tabla_inicial(df_recalculado)
             
             if mostrar_columnas_adicionales_pivote:
-                columnas_a_mostrar_pivot = ['Subcanal', 'QHc', 'PP', 'QUrs','URM2%', 'SS', 'SUSM2', 'PERM2', 'SUSM2%', 'PagoTotal', 'Acelerador', 'Planilla', 'Bono', 'Campaña', 'Otros']
+                columnas_a_mostrar_pivot = ['Subcanal', 'QHc', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2','SUSM2%','PagoTotal', 'Acelerador', 'Planilla', 'Bono', 'Campaña', 'Otros']
             else:
                 columnas_a_mostrar_pivot = ['Subcanal', 'QHc', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2','SUSM2%', 'PagoTotal'] 
             
@@ -424,7 +438,7 @@ def normal():
                 file_name="dataframe_inicial.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
-            st.markdown("---")
+            st.divider()
         
             
             # Tabla por grupos ------------------------------
@@ -432,7 +446,11 @@ def normal():
             st.info("""
             Puedes visualizar un **dataframe segmentado por grupos calculados**, el cual muestra la **distribución de QHcs** dentro de cada grupo resultante del cálculo. Si deseas visualizar el detalle del **Pago Total**, simplemente haz clic en la opción **"Mostrar adicionales"**.
             """)
-            mostrar_columnas_adicionales_grupos = st.checkbox("Mostrar adicionales ..")
+            #mostrar_columnas_adicionales_grupos = st.checkbox("Mostrar adicionales ..")
+
+            mostrar_columnas_adicionales_grupos = st.toggle("Mostrar adicionales ..")
+
+
 
             tabla_gru = tabla_resumen_grupos(df_recalculado)
 
@@ -456,7 +474,7 @@ def normal():
                 file_name="dataframe_grupos.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
-            st.markdown("---")
+            st.divider()
 
 
             # Tabla Detalle DNI  --------------------------------------------------------------------
@@ -466,20 +484,21 @@ def normal():
 
             df_recalculado_inc = df_recalculado[['Departamento', 'Socio', 'Kam', 'Subcanal', columna_DNI, 'Grupo', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2','SUSM2%', 'PagoTotal',  'Acelerador' , 'Planilla', 'Bono', 'Campaña', 'Otros' ]] 
 
+            container2 = st.container(border=True)
+            with container2:
+                filtro1, filtro2 = st.columns([2,2])
+                with filtro1:
+                    grupos_disponibles = df_recalculado_inc['Grupo'].unique()
+                    grupos_seleccionados = st.multiselect(
+                        "Selecciona uno o varios grupos",
+                        options= grupos_disponibles,  
+                        default= []  
+                    )
+                with filtro2:
+                    dni_ingresado = st.text_input(f"Ingresa un {columna_DNI}:")
 
-            filtro1, filtro2 = st.columns([2,2])
-            with filtro1:
-                grupos_disponibles = df_recalculado_inc['Grupo'].unique()
-                grupos_seleccionados = st.multiselect(
-                    "Selecciona uno o varios grupos",
-                    options= grupos_disponibles,  
-                    default= []  
-                )
-            with filtro2:
-                dni_ingresado = st.text_input(f"Ingresa un {columna_DNI}:")
-
-            mostrar_columnas_adicionales = st.checkbox("Mostrar adicionales ...")
-            
+            #mostrar_columnas_adicionales = st.checkbox("Mostrar adicionales ...")
+            mostrar_columnas_adicionales = st.toggle("Mostrar adicionales ...")
             
             df_descarga = df_recalculado_inc
 
@@ -530,8 +549,6 @@ def normal():
         st.write(f"Error al cargar el archivo: {e}")
         st.write("Detalles de la excepción:")
         st.text(traceback.format_exc())  
-
-
 
 
 def asignar_bandera_promedio(row, meses_validos, num_grupos):
