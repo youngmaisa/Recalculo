@@ -451,7 +451,6 @@ def normal():
             mostrar_columnas_adicionales_grupos = st.toggle("Mostrar adicionales ..")
 
 
-
             tabla_gru = tabla_resumen_grupos(df_recalculado)
 
             if mostrar_columnas_adicionales_grupos:
