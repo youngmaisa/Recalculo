@@ -663,7 +663,7 @@ def historico_optimizado(carpeta_archivos=carpeta_archivos):
       #  st.session_state.calcular = False
 
     filtro_mes = st.multiselect(
-        "Primero, selecciona los meses",  
+        "Primero selecciona los meses",  
         options =  meses_disponibles(carpeta_archivos),
         default=[])
     

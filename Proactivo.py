@@ -36,7 +36,6 @@ meses_orden = [
 tab_vista_normal, tab_vista_historica = \
     st.tabs(['VISTA NORMAL', 'VISTA HISTORICA'])
 
-
 min = 0
 max = 5000
 
@@ -160,6 +159,10 @@ def rango_ventas(carpeta_archivos):
         return None, None  
     return ventas_min, ventas_max
 
+
+
+def get_key_prefix(tab_name):
+    return f"{tab_name.lower().replace(' ', '_')}_"
 
 
 default_num_grupos = 10
@@ -564,7 +567,7 @@ def historico_optimizado(carpeta_archivos=carpeta_archivos):
       #  st.session_state.calcular = False
 
     filtro_mes = st.multiselect(
-        "Primero, selecciona los meses",  
+        "Primero selecciona los meses",  
         options =  meses_disponibles(carpeta_archivos),
         default=[])
     
@@ -684,6 +687,8 @@ def historico_optimizado(carpeta_archivos=carpeta_archivos):
 
 
 with tab_vista_normal:
+    key_prefix = get_key_prefix("VISTA NORMAL")
     normal()
 with tab_vista_historica:
+    key_prefix = get_key_prefix("VISTA HISTORICA")
     historico_optimizado()
