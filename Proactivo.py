@@ -161,49 +161,87 @@ def rango_ventas(carpeta_archivos):
     return ventas_min, ventas_max
 
 
+
+default_num_grupos = 10
+default_filtro_subcanal = []
+default_filtro_departamento = []
+default_filtro_kam = []
+default_filtro_socio = []
+default_min_val = min
+default_max_val = max
+default_min_urm2 = 0
+default_max_urm2 = 100
+
+def reset_filters():
+    st.session_state.num_grupos = default_num_grupos
+    st.session_state.filtro_subcanal = default_filtro_subcanal
+    st.session_state.filtro_departamento = default_filtro_departamento
+    st.session_state.filtro_kam = default_filtro_kam
+    st.session_state.filtro_socio = default_filtro_socio
+    st.session_state.min_input = default_min_val
+    st.session_state.max_input = default_max_val
+    st.session_state.min_input_urm2 = default_min_urm2
+    st.session_state.max_input_urm2 = default_max_urm2
+
+if st.sidebar.button("Restablecer filtros", use_container_width=True):
+    reset_filters()
+
+
 with st.sidebar:
-    num_grupos = st.number_input("Número de grupos", min_value=2, max_value=50, value=10)
+    
+    num_grupos = st.number_input(
+        "Número de grupos", 
+        min_value=2, 
+        max_value=50, 
+        value=st.session_state.get("num_grupos", default_num_grupos),
+        key="num_grupos"
+    )
 
     filtro_subcanal = st.multiselect(
         "Subcanal",
-        options= subcanales,
-        default=[]  
+        options= subcanales,  # Ejemplo de opciones
+        default=st.session_state.get("filtro_subcanal", default_filtro_subcanal),
+        key="filtro_subcanal"
     )
 
     filtro_departamento = st.multiselect(
         "Departamento",
-        options= departamentos,
-        default=[]  
+        options= departamentos,  # Ejemplo de opciones
+        default=st.session_state.get("filtro_departamento", default_filtro_departamento),
+        key="filtro_departamento"
     )
 
     filtro_kam = st.multiselect(
         "Kam",
-        options= kams,
-        default=[]  
+        options=kams,  # Ejemplo de opciones
+        default=st.session_state.get("filtro_kam", default_filtro_kam),
+        key="filtro_kam"
     )
 
     filtro_socio = st.multiselect(
         "Socio",
-        options= socios,
-        default=[]  
+        options= socios,  # Ejemplo de opciones
+        default=st.session_state.get("filtro_socio", default_filtro_socio),
+        key="filtro_socio"
     )
 
     min_val, max_val = min, max
     min_input = st.number_input(
         "Ingrese el valor mínimo de ventas:",
-        min_value=int(min_val),
-        max_value=int(max_val),
-        value=int(min_val),
-        step=1
+        min_value=int(default_min_val),
+        max_value=int(default_max_val),
+        value=st.session_state.get("min_input", default_min_val),
+        step=1,
+        key="min_input"
     )
     max_input = st.number_input(
         "Ingrese el valor máximo de ventas:",
-        min_value=int(min_val),
-        max_value=int(max_val),
-        value=int(max_val),
-        step=1
+        min_value=int(default_min_val),
+        max_value=int(default_max_val),
+        value=st.session_state.get("max_input", default_max_val),
+        step=1,
+        key="max_input"
     )
-
     if min_input > max_input:
         st.error("El valor mínimo de ventas no puede ser mayor que el valor máximo.")
 
@@ -211,23 +249,24 @@ with st.sidebar:
     min_urm2, max_urm2 = 0, 100
     min_input_urm2 = st.number_input(
         "Ingrese el valor mínimo de URM2%:",
-        min_value=int(min_urm2),
-        max_value=int(max_urm2),
-        value=int(min_urm2),
-        step=1
+        min_value=int(default_min_urm2),
+        max_value=int(default_max_urm2),
+        value=st.session_state.get("min_input_urm2", default_min_urm2),
+        step=1,
+        key="min_input_urm2"
     )
     max_input_urm2 = st.number_input(
         "Ingrese el valor máximo de URM2%:",
-        min_value=int(min_urm2),
-        max_value=int(max_urm2),
-        value=int(max_urm2),
-        step=1
+        min_value=int(default_min_urm2),
+        max_value=int(default_max_urm2),
+        value=st.session_state.get("max_input_urm2", default_max_urm2),
+        step=1,
+        key="max_input_urm2"
     )
-
     if min_urm2 > max_urm2:
         st.error("El valor mínimo de URM2% no puede ser mayor que el valor máximo.")
 
-
+   
 
 def aplicar_filtros(df):
         if filtro_subcanal:
@@ -332,10 +371,11 @@ def tabla_resumen_grupos(dataframe):
 #def normal(carpeta_archivos=carpeta_canal):
 
    
-    
-# Filro Meses 
+
 def normal():
-    filtro_mes = st.selectbox("Mes",  meses_disponibles(carpeta_archivos))
+    # Filro Meses 
+    meses =  meses_disponibles(carpeta_archivos)
+    filtro_mes = st.selectbox("Mes", meses , index=len(meses)-1)
     st.markdown("---")
 
     try:
@@ -519,103 +559,128 @@ def asignar_bandera_promedio(row, meses_validos, num_grupos):
 def historico_optimizado(carpeta_archivos=carpeta_archivos):
 
     st.markdown("""### :bar_chart: Tabla resumen""")
-    desempeños = ["Bueno", "Malo", "Neutro"]
-    filtro1, filtro2 = st.columns([2, 2])
-    with filtro1:
-        dni_ingresado = st.text_input(f"Ingresa un {columna_DNI} para buscar su progreso:")
-    with filtro2:
-        desempeño_ingresado = st.multiselect(
-            "Selecciona el desempeño",
-            options=desempeños,
-           default=[]
-        )
+    
+    #if "calcular" not in st.session_state:
+      #  st.session_state.calcular = False
 
-    @st.cache_data
-    def cargar_datos(carpeta_archivos):
-        archivos = os.listdir(carpeta_archivos) 
-        archivos = [os.path.join(carpeta_archivos, archivo) for archivo in archivos]
-        meses = meses_disponibles(carpeta_archivos)
-        resultados = []
-        for archivo, mes in zip(archivos, meses):
-            df = pd.read_excel(archivo, dtype={columna_DNI: str})
-            df = dataframe_mes(mes, carpeta_archivos)
-            df['Mes'] = mes
-            df = calcular_grupos_personalizados(
-                df,
-                num_grupos=num_grupos,
-                columnas_orden=["URM2%", "QUrs", "PP"]
-                )
-            resultados.append(df)
-        return pd.concat(resultados, ignore_index=True), meses
-
+    filtro_mes = st.multiselect(
+        "Primero, selecciona los meses",  
+        options =  meses_disponibles(carpeta_archivos),
+        default=[])
+    
+    #calcular = st.button('Calcular', use_container_width=True)
    
+    #if st.button('Calcular', use_container_width=True):
+      #  if not filtro_mes:
+      #      st.warning("Por favor selecciona al menos un mes antes de calcular.")
+       # else:
+       #     st.session_state.calcular = True
+            
 
-    df_total, meses = cargar_datos(carpeta_archivos)
+    if filtro_mes:
+       # st.warning("Por favor selecciona al menos un mes antes de calcular.")
+    #else:
+        #st.markdown("---")
+        # ordenar filtro mes
+        filtro_mes = sorted(filtro_mes)
+
+        #@st.cache_data
+        def cargar_datos(carpeta_archivos, filtro_mes):
+            archivos = os.listdir(carpeta_archivos) 
+            archivos = [os.path.join(carpeta_archivos, archivo) for archivo in archivos]
+            #meses = meses_disponibles(carpeta_archivos)
+            meses = filtro_mes
+            resultados = []
+            for archivo, mes in zip(archivos, meses):
+                df = pd.read_excel(archivo, dtype={columna_DNI: str})
+                df = dataframe_mes(mes, carpeta_archivos)
+                df['Mes'] = mes
+                df = calcular_grupos_personalizados(
+                    df,
+                    num_grupos= num_grupos,
+                    columnas_orden=["URM2%", "QUrs", "PP"]
+                    )
+                resultados.append(df)
+            return pd.concat(resultados, ignore_index=True), meses
+
+    
+        df_total, meses = cargar_datos(carpeta_archivos, filtro_mes=filtro_mes)
 
 
-    df_filtrado = aplicar_filtros(df_total)
+        df_filtrado = aplicar_filtros(df_total)
 
 
-    if not df_filtrado.empty:
-        todos_dnis = pd.DataFrame(df_filtrado[columna_DNI].unique(), columns=[columna_DNI]).sort_values(by=columna_DNI).reset_index(drop=True)
-        df_completo = todos_dnis.copy()
+        if not df_filtrado.empty:
 
-        meses_validos = [mes for mes in meses if not df_filtrado[df_filtrado['Mes'] == mes]['Grupo'].isnull().all()]
-        
-        for mes in meses_validos:
-            df_mes = df_filtrado[df_filtrado['Mes'] == mes][[columna_DNI, 'Grupo']]
-            df_mes_completo = todos_dnis.merge(df_mes, on=columna_DNI, how='left').rename(columns={'Grupo': mes})
-            df_completo = df_completo.merge(df_mes_completo[[columna_DNI, mes]], on=columna_DNI, how='left').fillna(0)
+            desempeños = ["Bueno", "Malo", "Neutro"]
+            filtro1, filtro2 = st.columns([2, 2])
+            with filtro1:
+                dni_ingresado = st.text_input(f"Ingresa un {columna_DNI} para buscar su progreso:")
+            with filtro2:
+                desempeño_ingresado = st.multiselect(
+                    "Selecciona el desempeño",
+                    options=desempeños,
+                default=[]
+                )
 
-        #df_completo['Evolución'] = df_completo.apply(
-         #   lambda row: [row[mes] for mes in meses_validos],
-         #   axis=1
-        #)
+            todos_dnis = pd.DataFrame(df_filtrado[columna_DNI].unique(), columns=[columna_DNI]).sort_values(by=columna_DNI).reset_index(drop=True)
+            df_completo = todos_dnis.copy()
 
-        df_completo[['Bandera', 'Desempeño']] = df_completo.apply(
-           lambda row: pd.Series(asignar_bandera_promedio(row, meses_validos, num_grupos)),
-            axis=1
-        )
+            meses_validos = [mes for mes in meses if not df_filtrado[df_filtrado['Mes'] == mes]['Grupo'].isnull().all()]
+            
+            for mes in meses_validos:
+                df_mes = df_filtrado[df_filtrado['Mes'] == mes][[columna_DNI, 'Grupo']]
+                df_mes_completo = todos_dnis.merge(df_mes, on=columna_DNI, how='left').rename(columns={'Grupo': mes})
+                df_completo = df_completo.merge(df_mes_completo[[columna_DNI, mes]], on=columna_DNI, how='left').fillna(0)
 
-      
-        if dni_ingresado:
-            df_seleccionado = df_completo[df_completo[columna_DNI] == dni_ingresado]
-            if df_seleccionado.empty:
-                st.warning(f"El {columna_DNI} ingresado no se encuentra en los datos.")
-        else:
-            if not desempeño_ingresado:
-                df_seleccionado = df_completo
+            #df_completo['Evolución'] = df_completo.apply(
+            #   lambda row: [row[mes] for mes in meses_validos],
+            #   axis=1
+            #)
+
+            df_completo[['Bandera', 'Desempeño']] = df_completo.apply(
+            lambda row: pd.Series(asignar_bandera_promedio(row, meses_validos, num_grupos)),
+                axis=1
+            )
+
+            if dni_ingresado:
+                df_seleccionado = df_completo[df_completo[columna_DNI] == dni_ingresado]
+                if df_seleccionado.empty:
+                    st.warning(f"El {columna_DNI} ingresado no se encuentra en los datos.")
             else:
-                df_seleccionado = df_completo[df_completo['Desempeño'].isin(desempeño_ingresado)]
+                if not desempeño_ingresado:
+                    df_seleccionado = df_completo
+                else:
+                    df_seleccionado = df_completo[df_completo['Desempeño'].isin(desempeño_ingresado)]
 
-        #st.dataframe(
-         #   df_seleccionado,
-         #  column_config={
-          #      "Evolución": st.column_config.BarChartColumn(
-           #         "Evolución de grupos",
-           #         y_min=0,
-          #          y_max=num_grupos
-           #     )
-        #    },
-          #  use_container_width=True
-        #)
+            #st.dataframe(
+            #   df_seleccionado,
+            #  column_config={
+            #      "Evolución": st.column_config.BarChartColumn(
+            #         "Evolución de grupos",
+            #         y_min=0,
+            #          y_max=num_grupos
+            #     )
+            #    },
+            #  use_container_width=True
+            #)
 
-        st.dataframe(df_seleccionado, use_container_width=True)
+            st.dataframe(df_seleccionado, use_container_width=True)
+        
+            towrite_seleccionado = io.BytesIO()
+            df_seleccionado.to_csv(towrite_seleccionado, index=False, encoding='utf-8')
+            towrite_seleccionado.seek(0)
+
+            st.download_button(
+                label="Descargar",
+                data=towrite_seleccionado,
+                file_name="dataframe_historico.csv",
+                mime="text/csv"
+            )
 
 
-      
-        towrite_seleccionado = io.BytesIO()
-        df_seleccionado.to_csv(towrite_seleccionado, index=False, encoding='utf-8')
-        towrite_seleccionado.seek(0)
-
-        st.download_button(
-            label="Descargar",
-            data=towrite_seleccionado,
-            file_name="dataframe_historico.csv",
-            mime="text/csv"
-        )
-    else:
-        st.warning("No hay datos para los filtros seleccionados.")
+        else:
+            st.warning("No hay datos para los filtros seleccionados.")
 
 
 with tab_vista_normal:
