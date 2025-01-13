@@ -381,10 +381,6 @@ def tabla_resumen_grupos(dataframe):
     return tabla
             
 
-#def normal(carpeta_archivos=carpeta_canal):
-
-
-
 def normal():
 
     container = st.container(border=True)
@@ -409,11 +405,9 @@ def normal():
 
         if not df_recalculado.empty:
 
-
             # Tabla Resumen Inicial  ------------------------------
             st.markdown("""### :page_facing_up: Resumen Inicial""")
             st.info("""Puede visualizar un **dataframe segmentado por subcanal**, si deseas el detalle del **PagoTotal**, simplemente haz clic  en **"Mostrar adicionales"**.""")
-            #mostrar_columnas_adicionales_pivote = st.checkbox("Mostrar adicionales .")
             mostrar_columnas_adicionales_pivote = st.toggle("Mostrar adicionales .")
 
 
@@ -446,8 +440,6 @@ def normal():
             st.info("""
             Puedes visualizar un **dataframe segmentado por grupos calculados**, el cual muestra la **distribución de QHcs** dentro de cada grupo resultante del cálculo. Si deseas visualizar el detalle del **Pago Total**, simplemente haz clic en la opción **"Mostrar adicionales"**.
             """)
-            #mostrar_columnas_adicionales_grupos = st.checkbox("Mostrar adicionales ..")
-
             mostrar_columnas_adicionales_grupos = st.toggle("Mostrar adicionales ..")
 
 
@@ -496,7 +488,7 @@ def normal():
                 with filtro2:
                     dni_ingresado = st.text_input(f"Ingresa un {columna_DNI}:")
 
-            #mostrar_columnas_adicionales = st.checkbox("Mostrar adicionales ...")
+           
             mostrar_columnas_adicionales = st.toggle("Mostrar adicionales ...")
             
             df_descarga = df_recalculado_inc
@@ -557,79 +549,49 @@ def asignar_bandera_promedio(row, meses_validos, num_grupos):
         return "⚪", "Neutro"
     
     promedio = sum(grupos_mes) / len(grupos_mes)
-    umbral_bajo = num_grupos * 0.5
-    umbral_alto = num_grupos * 0.6
+    umbral = num_grupos * 0.5
     
-    if promedio <= umbral_bajo:
-        #tendencia = "Flecha arriba" if grupos_mes[-1] < grupos_mes[0] else "Flecha abajo"
-        #simbolo = "✅🔼" if tendencia == "Flecha arriba" else "✅🔽"
-        simbolo = "✅"
-        return simbolo, "Bueno"
-    elif promedio >= umbral_alto:
-        #tendencia = "Flecha arriba" if grupos_mes[-1] < grupos_mes[0] else "Flecha abajo"
-        #simbolo = "❌🔼" if tendencia == "Flecha arriba" else "❌🔽"
-        simbolo = "❌"
-        return simbolo, "Malo"
+    if promedio <= umbral:
+        return "✅", "Bueno"
     else:
-        return "⚪", "Neutro"
+        return "❌", "Malo"
     
+
+def cargar_datos_recalculados(carpeta_archivos, filtro_mes):
+    archivos = os.listdir(carpeta_archivos) 
+    archivos = [os.path.join(carpeta_archivos, archivo) for archivo in archivos]
+    meses = filtro_mes
+    resultados = []
+    for archivo, mes in zip(archivos, meses):
+        df = pd.read_excel(archivo, dtype={columna_DNI: str})
+        df = dataframe_mes(mes, carpeta_archivos)
+        df['Mes'] = mes
+        df = aplicar_filtros(df)
+        df = calcular_grupos_personalizados(
+            df,
+            num_grupos= num_grupos,
+            columnas_orden=["URM2%", "QUrs", "PP"]
+            )
+        resultados.append(df)
+    return pd.concat(resultados, ignore_index=True), meses
 
 
 def historico_optimizado(carpeta_archivos=carpeta_archivos):
 
     st.markdown("""### :bar_chart: Tabla resumen""")
     
-    #if "calcular" not in st.session_state:
-      #  st.session_state.calcular = False
-
     filtro_mes = st.multiselect(
-        "Primero selecciona los meses",  
+        "Selecciona los meses",  
         options =  meses_disponibles(carpeta_archivos),
         default=[])
-    
-    #calcular = st.button('Calcular', use_container_width=True)
-   
-    #if st.button('Calcular', use_container_width=True):
-      #  if not filtro_mes:
-      #      st.warning("Por favor selecciona al menos un mes antes de calcular.")
-       # else:
-       #     st.session_state.calcular = True
-            
 
     if filtro_mes:
-       # st.warning("Por favor selecciona al menos un mes antes de calcular.")
-    #else:
-        #st.markdown("---")
-        # ordenar filtro mes
+
         filtro_mes = sorted(filtro_mes)
-
-        #@st.cache_data
-        def cargar_datos(carpeta_archivos, filtro_mes):
-            archivos = os.listdir(carpeta_archivos) 
-            archivos = [os.path.join(carpeta_archivos, archivo) for archivo in archivos]
-            #meses = meses_disponibles(carpeta_archivos)
-            meses = filtro_mes
-            resultados = []
-            for archivo, mes in zip(archivos, meses):
-                df = pd.read_excel(archivo, dtype={columna_DNI: str})
-                df = dataframe_mes(mes, carpeta_archivos)
-                df['Mes'] = mes
-                df = calcular_grupos_personalizados(
-                    df,
-                    num_grupos= num_grupos,
-                    columnas_orden=["URM2%", "QUrs", "PP"]
-                    )
-                resultados.append(df)
-            return pd.concat(resultados, ignore_index=True), meses
-
     
-        df_total, meses = cargar_datos(carpeta_archivos, filtro_mes=filtro_mes)
+        df_filtrado_total, meses = cargar_datos_recalculados(carpeta_archivos, filtro_mes=filtro_mes)
 
-
-        df_filtrado = aplicar_filtros(df_total)
-
-
-        if not df_filtrado.empty:
+        if not df_filtrado_total.empty:
 
             desempeños = ["Bueno", "Malo", "Neutro"]
             filtro1, filtro2 = st.columns([2, 2])
@@ -642,20 +604,17 @@ def historico_optimizado(carpeta_archivos=carpeta_archivos):
                 default=[]
                 )
 
-            todos_dnis = pd.DataFrame(df_filtrado[columna_DNI].unique(), columns=[columna_DNI]).sort_values(by=columna_DNI).reset_index(drop=True)
+            todos_dnis = pd.DataFrame(df_filtrado_total[columna_DNI].unique(), columns=[columna_DNI]).sort_values(by=columna_DNI).reset_index(drop=True)
             df_completo = todos_dnis.copy()
 
-            meses_validos = [mes for mes in meses if not df_filtrado[df_filtrado['Mes'] == mes]['Grupo'].isnull().all()]
+            # meses q no son todo nulo
+            meses_validos = [mes for mes in meses if not df_filtrado_total[df_filtrado_total['Mes'] == mes]['Grupo'].isnull().all()] 
             
             for mes in meses_validos:
-                df_mes = df_filtrado[df_filtrado['Mes'] == mes][[columna_DNI, 'Grupo']]
+                df_mes = df_filtrado_total[df_filtrado_total['Mes'] == mes][[columna_DNI, 'Grupo']]
                 df_mes_completo = todos_dnis.merge(df_mes, on=columna_DNI, how='left').rename(columns={'Grupo': mes})
                 df_completo = df_completo.merge(df_mes_completo[[columna_DNI, mes]], on=columna_DNI, how='left').fillna(0)
 
-            #df_completo['Evolución'] = df_completo.apply(
-            #   lambda row: [row[mes] for mes in meses_validos],
-            #   axis=1
-            #)
 
             df_completo[['Bandera', 'Desempeño']] = df_completo.apply(
             lambda row: pd.Series(asignar_bandera_promedio(row, meses_validos, num_grupos)),
@@ -672,20 +631,9 @@ def historico_optimizado(carpeta_archivos=carpeta_archivos):
                 else:
                     df_seleccionado = df_completo[df_completo['Desempeño'].isin(desempeño_ingresado)]
 
-            #st.dataframe(
-            #   df_seleccionado,
-            #  column_config={
-            #      "Evolución": st.column_config.BarChartColumn(
-            #         "Evolución de grupos",
-            #         y_min=0,
-            #          y_max=num_grupos
-            #     )
-            #    },
-            #  use_container_width=True
-            #)
-
             st.dataframe(df_seleccionado, use_container_width=True)
         
+            # descarga
             towrite_seleccionado = io.BytesIO()
             df_seleccionado.to_csv(towrite_seleccionado, index=False, encoding='utf-8')
             towrite_seleccionado.seek(0)
@@ -696,7 +644,6 @@ def historico_optimizado(carpeta_archivos=carpeta_archivos):
                 file_name="dataframe_historico.csv",
                 mime="text/csv"
             )
-
 
         else:
             st.warning("No hay datos para los filtros seleccionados.")
