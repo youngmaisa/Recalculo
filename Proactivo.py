@@ -107,7 +107,8 @@ def dataframe_mes(mes, carpeta_archivos):
 
     df_original['MES'] = df_original['MES'].astype(str)
     df_original['HC'] = 1
-    df_original['URM2%'] = round((df_original['Urs'] / df_original['QVENTAS']) * 100,2)
+    df_original['URM2%'] = round((df_original['Urs'] / df_original['QVENTAS']) * 100,1)
+    df_original['ALERTA'] =  round((df_original['NUEVA_COL'] / df_original['SS']) * 100,1)
     df_original['PagoTotal'] = (df_original['ACELERADOR'] + df_original['PLANILLA'] + df_original['BONO']+ df_original['CAMPAÑA']+ df_original['OTROS'])
     
     df_original = df_original.rename(columns={
@@ -130,6 +131,7 @@ def dataframe_mes(mes, carpeta_archivos):
             'OTROS': 'Otros'
     })
 
+    df_original = df_original.fillna(0)
     return df_original
     
 
@@ -280,7 +282,6 @@ with st.sidebar:
 
 
 
-
 def aplicar_filtros(df):
     if filtro_subcanal:
         df = df[df['Subcanal'].isin(filtro_subcanal)]
@@ -303,8 +304,7 @@ def tabla_inicial(df):
         PP=('PP', 'sum'),
         QUrs=('QUrs', 'sum'),
         SS = ('SS', 'sum'),
-        SUSM2 = ('SUSM2', 'sum'),
-        PERM2 = ('PERM2', 'sum'),
+        NUEVA_COL = ('NUEVA_COL', 'sum'),
         PagoTotal = ('PagoTotal', 'sum'),
         Acelerador = ('Acelerador', 'sum'),
         Planilla = ('Planilla', 'sum'),
@@ -312,9 +312,12 @@ def tabla_inicial(df):
         Campaña = ('Campaña', 'sum'),
         Otros = ('Otros', 'sum')
     ).reset_index()
+
     tabla['URM2%'] = round((tabla['QUrs'] / tabla['PP']) * 100,1)
-    tabla['SUSM2%'] = round(((tabla['SUSM2'] + tabla['PERM2'])/tabla['SS'])*100,1)
+    tabla['ALERTA'] = round((tabla['NUEVA_COL']/tabla['SS'])*100,1)
+   
     tabla = tabla.sort_values(by='QHc', ascending=False).reset_index(drop=True)
+   
     total_row = pd.DataFrame({
         'Subcanal': ['Total'],
         'QHc': [tabla['QHc'].sum()],
@@ -323,9 +326,8 @@ def tabla_inicial(df):
         'URM2%': [round((tabla['QUrs'].sum() / tabla['PP'].sum()) * 100, 1) 
                 if tabla['PP'].sum() > 0 else 0],
         'SS': [tabla['SS'].sum()],
-        'SUSM2': [tabla['SUSM2'].sum()],
-        'PERM2': [tabla['PERM2'].sum()],
-        'SUSM2%': [round(((tabla['SUSM2'].sum() + tabla['PERM2'].sum())/tabla['SS'].sum())*100,1)],
+        'NUEVA_COL': [tabla['NUEVA_COL'].sum()],
+        'ALERTA': [round((tabla['NUEVA_COL'].sum()/tabla['SS'].sum())*100,1)],
         'PagoTotal': [tabla['PagoTotal'].sum()],
         'Acelerador':  [tabla['Acelerador'].sum()],
         'Planilla': [tabla['Planilla'].sum()],
@@ -345,8 +347,7 @@ def tabla_resumen_grupos(dataframe):
         PP=('PP', 'sum'),
         QUrs=('QUrs', 'sum'),
         SS = ('SS', 'sum'),
-        SUSM2 = ('SUSM2', 'sum'),
-        PERM2 = ('PERM2', 'sum'),
+        NUEVA_COL = ('NUEVA_COL', 'sum'),
         PagoTotal = ('PagoTotal', 'sum'),
         Acelerador = ('Acelerador', 'sum'),
         Planilla = ('Planilla', 'sum'),
@@ -356,7 +357,7 @@ def tabla_resumen_grupos(dataframe):
     ).reset_index()
 
     tabla['URM2%'] = round((tabla['QUrs'] / tabla['PP']) * 100,1)
-    tabla['SUSM2%'] = round(((tabla['SUSM2'] + tabla['PERM2'])/tabla['SS'])*100,1)
+    tabla['ALERTA'] = round((tabla['NUEVA_COL']/tabla['SS'])*100,1)
 
     total_row = pd.DataFrame({
         'Grupo': ['Total'],
@@ -366,9 +367,8 @@ def tabla_resumen_grupos(dataframe):
         'QUrs': [tabla['QUrs'].sum()],
         'URM2%': [round((tabla['QUrs'].sum() / tabla['PP'].sum()) * 100,1) if tabla['PP'].sum() > 0 else 0],
         'SS': [tabla['SS'].sum()],
-        'SUSM2': [tabla['SUSM2'].sum()],
-        'PERM2': [tabla['PERM2'].sum()],
-        'SUSM2%': [round(((tabla['SUSM2'].sum() + tabla['PERM2'].sum())/tabla['SS'].sum())*100,1)],
+        'NUEVA_COL': [tabla['NUEVA_COL'].sum()],
+        'ALERTA': [round((tabla['NUEVA_COL'].sum()/tabla['SS'].sum())*100,1)],
         'PagoTotal': [tabla['PagoTotal'].sum()],
         'Acelerador':  [tabla['Acelerador'].sum()],
         'Planilla': [tabla['Planilla'].sum()],
@@ -391,6 +391,7 @@ def normal():
 
     try:
         df = dataframe_mes(filtro_mes, carpeta_archivos)
+        #st.dataframe(df)
         df = calcular_grupos_personalizados(dataframe= df,num_grupos= num_grupos, columnas_orden=['URM2%', 'QUrs', 'PP'])
 
         df_filtrado = aplicar_filtros(df)
@@ -414,9 +415,9 @@ def normal():
             tabla_ini = tabla_inicial(df_recalculado)
             
             if mostrar_columnas_adicionales_pivote:
-                columnas_a_mostrar_pivot = ['Subcanal', 'QHc', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2','SUSM2%','PagoTotal', 'Acelerador', 'Planilla', 'Bono', 'Campaña', 'Otros']
+                columnas_a_mostrar_pivot = ['Subcanal', 'QHc', 'PP', 'QUrs', 'URM2%', 'SS', 'ALERTA','PagoTotal', 'Acelerador', 'Planilla', 'Bono', 'Campaña', 'Otros']
             else:
-                columnas_a_mostrar_pivot = ['Subcanal', 'QHc', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2','SUSM2%', 'PagoTotal'] 
+                columnas_a_mostrar_pivot = ['Subcanal', 'QHc', 'PP', 'QUrs', 'URM2%', 'SS', 'ALERTA', 'PagoTotal'] 
             
             st.dataframe(tabla_ini[columnas_a_mostrar_pivot], use_container_width=True)
             
@@ -446,10 +447,10 @@ def normal():
             tabla_gru = tabla_resumen_grupos(df_recalculado)
 
             if mostrar_columnas_adicionales_grupos:
-                columnas_a_mostrar_tabla_grupos = ['Grupo', 'RangoGrupo','QHc', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2', 'SUSM2%', 'PagoTotal',  'Acelerador' , 'Planilla', 'Bono', 'Campaña', 'Otros']  
+                columnas_a_mostrar_tabla_grupos = ['Grupo', 'RangoGrupo','QHc', 'PP', 'QUrs', 'URM2%', 'SS',  'ALERTA', 'PagoTotal',  'Acelerador' , 'Planilla', 'Bono', 'Campaña', 'Otros']  
                 
             else:
-                columnas_a_mostrar_tabla_grupos = ['Grupo', 'RangoGrupo', 'QHc', 'PP', 'QUrs', 'URM2%',  'SS', 'SUSM2', 'PERM2', 'SUSM2%','PagoTotal']  
+                columnas_a_mostrar_tabla_grupos = ['Grupo', 'RangoGrupo', 'QHc', 'PP', 'QUrs', 'URM2%',  'SS', 'ALERTA','PagoTotal']  
                 
             st.dataframe(tabla_gru[columnas_a_mostrar_tabla_grupos], use_container_width=True)
 
@@ -473,7 +474,7 @@ def normal():
             st.info("""Puedes visualizar un **dataframe detallado** con los grupos calculados, mostrando los **DNIs asociados a cada grupo**.  Si deseas observar el detalle del **Pago Total**, simplemente haz clic en la opción **"Mostrar adicionales"**.""")
 
 
-            df_recalculado_inc = df_recalculado[['Departamento', 'Socio', 'Kam', 'Subcanal', columna_DNI, 'Grupo', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2','SUSM2%', 'PagoTotal',  'Acelerador' , 'Planilla', 'Bono', 'Campaña', 'Otros' ]] 
+            df_recalculado_inc = df_recalculado[['Departamento', 'Socio', 'Kam', 'Subcanal', columna_DNI, 'Grupo', 'PP', 'QUrs', 'URM2%', 'SS', 'ALERTA', 'PagoTotal',  'Acelerador' , 'Planilla', 'Bono', 'Campaña', 'Otros' ]] 
 
             container2 = st.container(border=True)
             with container2:
@@ -495,9 +496,9 @@ def normal():
 
 
             if mostrar_columnas_adicionales:
-                columnas_a_mostrar = ['Departamento', 'Socio', 'Kam' ,'Subcanal', columna_DNI, 'Grupo', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2', 'SUSM2%', 'PagoTotal',  'Acelerador' , 'Planilla', 'Bono', 'Campaña', 'Otros']  
+                columnas_a_mostrar = ['Departamento', 'Socio', 'Kam' ,'Subcanal', columna_DNI, 'Grupo', 'PP', 'QUrs', 'URM2%', 'SS', 'ALERTA', 'PagoTotal',  'Acelerador' , 'Planilla', 'Bono', 'Campaña', 'Otros']  
             else:
-                columnas_a_mostrar = ['Departamento', 'Socio', 'Kam', 'Subcanal', columna_DNI, 'Grupo', 'PP', 'QUrs', 'URM2%', 'SS', 'SUSM2', 'PERM2', 'SUSM2%','PagoTotal']  
+                columnas_a_mostrar = ['Departamento', 'Socio', 'Kam', 'Subcanal', columna_DNI, 'Grupo', 'PP', 'QUrs', 'URM2%', 'SS', 'ALERTA', 'PagoTotal']  
                 
 
             if grupos_seleccionados:
