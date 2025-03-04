@@ -19,7 +19,7 @@ st.markdown("""## Herramienta de Recálculo""")
 columna_DNI = 'DNI'
 carpeta_archivos  = 'data/PROACTIVO'
 subcanales = ['DESARROLLADOR', 'HC EMO MERCADO', 'FULL PREPAGO DD',
-            'DAE', 'FULL PREPAGO DAE', 'HC MONOMARCA', 'HC EMO']
+            'DAE', 'FULL PREPAGO DAE', 'HC MONOMARCA', 'HC EMO',  'E. MULTIMARCA', 'FULL PREPAGO']
 departamentos = ['PUNO', 'TUMBES', 'UCAYALI', 'HUANUCO', 'TACNA', 'AMAZONAS', 'LIMA', 
                 'CUSCO', 'APURIMAC', 'CAJAMARCA', 'MADRE DE DIOS', 'LORETO', 'ANCASH', 
                 'PIURA', 'ICA', 'MOQUEGUA', 'SAN MARTIN', 'AREQUIPA','LAMBAYEQUE', 
